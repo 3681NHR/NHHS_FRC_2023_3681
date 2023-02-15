@@ -1,2 +1,2 @@
-# NHHS_FRC_2023_3681
-NHHS robotics code for the FRC 2023 season.
+# FRC2023-3681
+ 2023-3681 robot code
