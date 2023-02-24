@@ -150,6 +150,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         SmartDashboard.putNumber("Encoder", rotatingArmEncoder.getDistance());
+        SmartDashboard.putNumber("Gyro2", gyro.getRate());
         // System.out.println("Periodic");
     }
 
@@ -227,6 +228,8 @@ public class Robot extends TimedRobot {
         // drive.close();
 
         System.out.println("FORWARD: " + FORWARD + " STRAFE: " + STRAFE + " ROTATE: " + ROTATE);
+
+        SmartDashboard.putNumber("Gyro Rate ", gyro.getRate());
 
     }
 
