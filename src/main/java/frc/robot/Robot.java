@@ -7,15 +7,11 @@ package frc.robot;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID;
-//import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-//import edu.wpi.first.wpilibj.motorcontrol.Spark;
-//import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-//import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,40 +27,45 @@ import java.util.concurrent.locks.ReentrantLock;
  * ACTIVATE LIVE SHARE IMMEDIATELY AS YOU OPEN THE LAPTOP
  * ACTIVATE LIVE SHARE IMMEDIATELY AS YOU OPEN THE LAPTOP
  * OTHERWISE I CANT DO ANYTHING WHILE IM IN THE PHILLIPINES
- * 
- * This sample program shows how to control a motor using a joystick. In the
- * operator control part
- * of the program, the joystick is read and the value is written to the motor.
- *
- * <p>
- * Joystick analog values range from -1 to 1 and motor controller inputs also
- * range from -1 to 1
- * making it easy to work together.
- *
+
  * <p>
  * In addition, the encoder value of an encoder connected to ports 0 and 1 is
  * consistently sent
  * to the Dashboard.
  */
 public class Robot extends TimedRobot {
+    private static final int FRONT_LEFT_WHEEL_CAN_ID = 3; 
+    private static final int BACK_LEFT_WHEEL_CAN_ID = 1; 
+    private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2; 
+    private static final int BACK_RIGHT_WHEEL_CAN_ID = 4;
+    
+    private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6; 
+    private static final int ROTATING_ARM_ENCODER_PIN_A = 0; // TODO: Set this properly once it's plugged in
+    private static final int ROTATING_ARM_ENCODER_PIN_B = 1; // TODO: Set this properly once it's plugged in
+
+    private static final int GRIPPER_CARRIAGE_CONTROLLER_CAN_ID = 9;
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 0; // TODO
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 1; // 
+    
+    private static final int XBOX_CONTROLLER_USB_PORT = 0; 
+    private static final int BUTTON_PANEL_USB_PORT = 4;
+
     ADIS16470_IMU gyro = new ADIS16470_IMU();
-    MotorController frontLeft = new SparkWrapper(3);
-    MotorController backLeft = new SparkWrapper(1);
-    MotorController frontRight = new SparkWrapper(2);
-    MotorController backRight = new SparkWrapper(4);
-    MotorController exstender = new SparkWrapper(9);
-    MotorController lifter = new SparkWrapper(6);
-    XboxController xboxController = new XboxController(0);
+    MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
+    MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
+    MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
+    MotorController backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID);
+    
+    XboxController xboxController = new XboxController(XBOX_CONTROLLER_USB_PORT);
+    GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
 
-    GenericHID buttonPanel = new GenericHID(4);
     MecanumDrive drive = new MecanumDrive(frontLeft, backLeft, frontRight, backRight);
-    private static final int kJoystickPort = 0;
-    private static final int kEncoderPortA = 0;
-    private static final int kEncoderPortB = 1;
+    
+    private Encoder rotatingArmEncoder;
+    MotorController rotatingArmController = new SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID);
 
-    // private MotorController m_motor;
-    // private Joystick m_joystick;
-    private Encoder m_encoder;
+    private Encoder gripperCarriageEncoder; 
+    private MotorController gripperCarriageController = new SparkWrapper(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID)
 
     // Use gyro declaration from above here
 
@@ -83,6 +84,18 @@ public class Robot extends TimedRobot {
      *
      */
     // DifferentialDrive drive = new DifferentialDrive(leftMotors, rightMotors);
+
+    private void initializeRotatingArmEncoder() {
+        rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A, 
+                                        ROTATING_ARM_ENCODER_PIN_B, 
+                                        false, 
+                                        Encoder.EncodingType.k2X); // TODO: Check if this is the Encoding type we want
+        // Use SetDistancePerPulse to set the multiplier for GetDistance
+        // This is set up assuming a 6 inch wheel with a 360 CPRh encoder.
+        rotatingArmEncoder.setDistancePerPulse((Math.PI * 6) / 360.0);
+
+        rotatingArmEncoder.reset();
+    }
 
     @Override
     public void autonomousInit() {
@@ -113,10 +126,7 @@ public class Robot extends TimedRobot {
         // public static final ADIS16448_IMU imu = new ADIS16448_IMU();
         // m_motor = new CANSparkMax(frontLeft,MotorType.kBrushless);
 
-        m_encoder = new Encoder(kEncoderPortA, kEncoderPortB);
-        // Use SetDistancePerPulse to set the multiplier for GetDistance
-        // This is set up assuming a 6 inch wheel with a 360 CPRh encoder.
-        m_encoder.setDistancePerPulse((Math.PI * 6) / 360.0);
+        initializeRotatingArmEncoder();
 
         // Set setpoint to current heading at start of auto
         heading = gyro.getAngle();
@@ -136,7 +146,7 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotPeriodic() {
-        SmartDashboard.putNumber("Encoder", m_encoder.getDistance());
+        SmartDashboard.putNumber("Encoder", rotatingArmEncoder.getDistance());
         // System.out.println("Periodic");
     }
 
@@ -232,10 +242,17 @@ public class Robot extends TimedRobot {
 
         System.out.println("FORWARD: " + FORWARD + " STRAFE: " + STRAFE + " ROTATE: " + ROTATE);
 
-        // System.out.println("teleopPeriodic");
-        // System.out.print(ROTATE);
-        // System.out.print(FORWARD);
-        // System.out.print(STRAFE);
+    }
+
+    private void rotateArmToPosition() {
+        // Read 
+        // Turn rotatingArm motor controller on
+
+
+    }
+
+    private void holdRotatingArmPosition() {
+
     }
 
 }
