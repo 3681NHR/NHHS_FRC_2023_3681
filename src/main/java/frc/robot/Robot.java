@@ -190,44 +190,22 @@ public class Robot extends TimedRobot {
         // motor speed is -1 to 1
         // m_motor.set(1);
         var STRAFE = 0.0;
-        // Buffer the input 
-        if (Math.abs(leftJoystickX) > 0.2) {
-            if (leftJoystickX < 0) {
-                STRAFE = leftJoystickX + 0.2;
-            } else {
-                STRAFE = leftJoystickX - 0.2;
-            }
-        }
-        // Joystick direction is opposite of where we want to go
+        STRAFE = bufferJoystickInput(leftJoystickX, 0.2); 
         STRAFE *= -1;
 
         var FORWARD = 0.0;
-        // Buffer the input
-        if (Math.abs(leftJoystickY) > 0.2) {
-            if (leftJoystickY < 0) {
-                FORWARD = leftJoystickY + 0.2;
-            } else {
-                FORWARD = leftJoystickY - 0.2;
-            }
-        }
+        FORWARD = bufferJoystickInput(leftJoystickY, 0.2);
         // Joystick direction is opposite 
         FORWARD *= -1;
 
         var ROTATE = 0.0;
         // Buffer the input
-        if (Math.abs(rightJoystickX) > 0.2) {
-            if (rightJoystickX < 0) {
-                ROTATE = rightJoystickX + 0.2;
-            } else {
-                ROTATE = rightJoystickX - 0.2;
-            }
-        }
+        ROTATE = bufferJoystickInput(rightJoystickX, 0.2); 
 
         var multiplier = 1;// (-RightStick.getThrottle() * 0.5) + 0.5;
         FORWARD *= multiplier;
         STRAFE *= multiplier;
         ROTATE *= multiplier;
-        // drive.driveCartesian(-y, -x, -z); // z);
         drive.driveCartesian(FORWARD, STRAFE, ROTATE);
 
         /*
