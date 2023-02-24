@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -65,7 +67,7 @@ public class Robot extends TimedRobot {
     MotorController rotatingArmController = new SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID);
 
     private Encoder gripperCarriageEncoder; 
-    private MotorController gripperCarriageController = new SparkWrapper(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID)
+    private MotorController gripperCarriageController = new SparkWrapper(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID);
 
     // Use gyro declaration from above here
 
@@ -80,10 +82,11 @@ public class Robot extends TimedRobot {
     MotorControllerGroup leftMotors = new MotorControllerGroup(frontLeft, backLeft);
     MotorControllerGroup rightMotors = new MotorControllerGroup(frontRight, backRight);
 
-    /**
-     *
-     */
-    // DifferentialDrive drive = new DifferentialDrive(leftMotors, rightMotors);
+
+    // Gains are for example purposes only - must be determined for your own robot!
+    // TODO: Update gain vals in the feed forward 
+    private final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(1, 3);
+    private final PIDController rotatingArmPIDController = new PIDController(1, 0, 0);
 
     private void initializeRotatingArmEncoder() {
         rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A, 
@@ -208,6 +211,11 @@ public class Robot extends TimedRobot {
         ROTATE *= multiplier;
         drive.driveCartesian(FORWARD, STRAFE, ROTATE);
 
+        if (xboxController.getXButton()) {
+            // Right now, just use the X button to rotate the arm
+            rotateArmToPosition(.45); // TODO: What's the right value here? 
+        }
+
         /*
          * // Thumb button
          * if (rightStick.getRawButton(2)) {
@@ -222,10 +230,23 @@ public class Robot extends TimedRobot {
 
     }
 
-    private void rotateArmToPosition() {
+    public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond) {
+        final double feedForward = rotatingArmFeedForward.calculate(rotatingArmSpeedMetersPerSecond);
+        
+        final double output =
+            rotatingArmPIDController.calculate(rotatingArmEncoder.getRate(), rotatingArmSpeedMetersPerSecond);
+        rotatingArmController.setVoltage(output + feedForward); 
+      }
+    
+
+    private void rotateArmToPosition(double distance) {
         // Read 
         // Turn rotatingArm motor controller on
-
+        if (rotatingArmEncoder.getDistance() < distance) {
+            setRotatingArmSpeed(0.2); // TODO: Make this speed a bit smarter
+        }
+        SmartDashboard.putNumber("Encoder Distance", rotatingArmEncoder.getDistance());
+        SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());
 
     }
 
