@@ -8,8 +8,8 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.ADIS16470_IMU;
-import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.ADIS16448_IMU;
+import edu.wpi.first.wpilibj.DigitalInput; //damn!!! digital input, cant remember where I needed that
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -17,8 +17,11 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import edu.wpi.first.cameraserver.CameraServer;
@@ -38,16 +41,8 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 //liveshare link
 /**
- * here uhm
- * TODO LIST:
- * Getting real encoder working
- * Setup PID for analog backup
- * Unintelligent Automation Code
- * Get breaks working
- * GET CV WORKING
- * THRESHOLD, COUNTOURS AND ALL THAT JAZZ = ANGLE DISTANCE ETC
- * SET UP PATHPLANNER (CHIEF DELPHI)
- * 
+
+I blame neil for this existing. - DJ
 
  * <p>
  * In addition, the encoder value of an encoder connected to ports 0 and 1 is
@@ -57,6 +52,8 @@ import com.revrobotics.CANSparkMax;
 
 public class Robot extends TimedRobot {
     Thread m_visionThread;
+    long t = System.currentTimeMillis();
+    long end;
     private static final int FRONT_LEFT_WHEEL_CAN_ID = 3; 
     private static final int BACK_LEFT_WHEEL_CAN_ID = 1; 
     private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2; 
@@ -64,22 +61,25 @@ public class Robot extends TimedRobot {
     
     private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6;
     private static final int ROTATING_ARM_ENCODER_PIN_A = 2; // TODO: Set this properly once it's plugged in
-    private static final int ROTATING_ARM_ENCODER_PIN_B = 3; // TODO: Set this properly once it's plugged in
+    private static final int ROTATING_ARM_ENCODER_PIN_B = 3; // currently set up to be the gripper carriage encoder still doesnt work
 
     private static final int GRIPPER_CARRIAGE_CONTROLLER_CAN_ID = 9;
-    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 1; // TODO
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 1; // 
     private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 0; // 
     
     private static final int XBOX_CONTROLLER_USB_PORT = 0; 
     private static final int BUTTON_PANEL_USB_PORT = 4;
     
-    ADIS16470_IMU gyro = new ADIS16470_IMU();
+    ADIS16448_IMU gyro = new ADIS16448_IMU();
+    private double[] gyroAccelData = {0.0, 0.0, 0.0};
+    private double[] gyroAngleData = {0.0, 0.0, 0.0};
     MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
     MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
     MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
     MotorController backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID);
     
     XboxController xboxController = new XboxController(XBOX_CONTROLLER_USB_PORT);
+    XboxController xboxController2 = new XboxController(1);
     GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
 
     MecanumDrive drive = new MecanumDrive(frontLeft, backLeft, frontRight, backRight);
@@ -104,6 +104,7 @@ public class Robot extends TimedRobot {
     double pos1;
     double sim;
     double rotations;
+    double hardcodeddistance;
     NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
     // We'll use this to read values from the Raspberry Pi vision component
     NetworkTable visionNetworkTable = networkTables.getTable("vision");
@@ -144,12 +145,12 @@ public class Robot extends TimedRobot {
 
         LiftAxisEncoder.setPosition(0);
 
-        rotatingArmEncoder.reset();
+        rotatingArmEncoder.reset(); //GRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH
     }
 
     private void initializeLastDitchEncoderAnalogPID() {
             // PID coefficients
-
+        // for future lookers, we never used this.
        LiftAxisPID = LiftAxisController.getPIDController();
 
         // set PID coefficients
@@ -174,6 +175,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        end = System.currentTimeMillis()+2000;
+        hardcodeddistance = 0;
 
     }
 
@@ -186,21 +189,25 @@ public class Robot extends TimedRobot {
         // heading = 45;
 
         gyro_error = heading - gyro.getAngle();
-        // Drives forward continuously at half speed, using the gyro to stabilize the
-        // heading
+        gyro.getAccelX();
+
         double x = 0; // TODO: Figure this from the kp * error
         double y = 0; // TODO: Figure this from kp * error
         double z = 0; // TODO: Figure this form kp * error
-        //drive.driveCartesian(x, y, z);
     }
     @Override
     public void robotInit() {
         //here
+        gyro.calibrate();
+        //Shuffleboard.getTab("Fun Stuff").add(gyro);
+
+        //owo - misha
         Stage1Helper = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 7, 5);
         Stage2Gripper = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 4, 6);
+        Stage1Helper.set(kReverse); //real init hours
 
-        breakpiston = new Solenoid(PneumaticsModuleType.CTREPCM, 3);
-        breakpiston.set(false);
+        breakpiston = new Solenoid(PneumaticsModuleType.CTREPCM, 1);
+        breakpiston.set(true); //true on jah - DJ
         pos1 = 0;
         sim = 0;
 
@@ -237,7 +244,8 @@ public class Robot extends TimedRobot {
                 if (cvSink.grabFrame(mat) == 0) {
                   // Send the output the error.
                   //outputStream.notifyError(cvSink.getError());
-                  // skip the rest of the current iteration
+                  // skip the rest of the current 
+                  
                   continue;
                 }
                 // Put a rectangle on the image
@@ -247,13 +255,11 @@ public class Robot extends TimedRobot {
                 outputStream.putFrame(mat);
               }
             });
-    m_visionThread.setDaemon(true);
+    m_visionThread.setDaemon(true); //haha daemon!
     m_visionThread.start();
- 
-        // get the library for the ADIS working.
+        
+        // get the library for the ADIS working. (FIXED but im leaving the comment in because I like how awful this code looks)
         // I cannot install it and its causing me issues.
-        // public static final ADIS16448_IMU imu = new ADIS16448_IMU();
-        // m_motor = new CANSparkMax(frontLeft,MotorType.kBrushless);
 
         initializeRotatingArmEncoder();
 
@@ -282,7 +288,28 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Encoder", rotatingArmEncoder.getDistance());
         
         SmartDashboard.putNumber("Gyro2", gyro.getRate());
+        
         // System.out.println("Periodic");
+    }
+
+    private void putGyroDataOnDashboard() {
+        // gyroAccelData[0] = gyro.getAccelX();
+        // gyroAccelData[1] = gyro.getAccelY();
+        // gyroAccelData[2] = gyro.getAccelZ();
+//        SmartDashboard.putNumberArray("Gryo Accel", gyroAccelData);
+        SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
+        SmartDashboard.putNumber("Gyro Accel Y", gyro.getAccelY());
+        SmartDashboard.putNumber("Gyro Accel Z", gyro.getAccelZ());
+
+        // gyroAngleData[0] = gyro.getGyroAngleX();
+        // gyroAngleData[1] = gyro.getGyroAngleY();
+        // gyroAngleData[2] = gyro.getGyroAngleZ();
+        // SmartDashboard.putNumberArray("Gryo Angles", gyroAngleData);
+
+        SmartDashboard.putNumber("Gyro Angle X", gyro.getGyroAngleX());
+        SmartDashboard.putNumber("Gyro Angle Y", gyro.getGyroAngleY());
+        SmartDashboard.putNumber("Gyro Angle Z", gyro.getGyroAngleZ());
+
     }
 
     private final Lock dataLock = new ReentrantLock();
@@ -300,11 +327,12 @@ public class Robot extends TimedRobot {
         }
         return 0.0;
     }
-
+    int test = 1;
     @Override
     public void teleopPeriodic() {
         dataLock.lock();
         dataLock.unlock();
+        SmartDashboard.putNumber("testnumber", test++);
         double leftJoystickY = xboxController.getLeftY();
 
         double leftJoystickX = xboxController.getLeftX();
@@ -323,11 +351,13 @@ public class Robot extends TimedRobot {
 
         // motor speed is -1 to 1
         // m_motor.set(1);
-        System.out.println(pos1+" X pressed | rotations: " + rotations+ " | position: "+LiftAxisEncoder.getPosition()+" | carriage enc: "+rotatingArmEncoder.getDistance());
+        //System.out.println(pos1+" X pressed | rotations: " + rotations+ " | position: "+LiftAxisEncoder.getPosition()+" | carriage enc: "+rotatingArmEncoder.getDistance());
+        //System.out.println(gyro.getAccelX()+" x accel | " + gyro.getAccelY() + " y accel | " + gyro.getAccelZ() + " z accel | " + gyro.getYComplementaryAngle() + " y angle | " + System.currentTimeMillis() + " time ");
+        putGyroDataOnDashboard();
 
         var STRAFE = 0.0;
         STRAFE = bufferJoystickInput(leftJoystickX, 0.2); 
-        STRAFE *= -1;
+        STRAFE *= -1; 
 
         var FORWARD = 0.0;
         FORWARD = bufferJoystickInput(leftJoystickY, 0.2);
@@ -338,24 +368,26 @@ public class Robot extends TimedRobot {
         // Buffer the input
         ROTATE = bufferJoystickInput(rightJoystickX, 0.2); 
 
-        var multiplier = 1;// (-RightStick.getThrottle() * 0.5) + 0.5;
+        var multiplier = (-(xboxController.getLeftTriggerAxis()*.4)+(xboxController.getRightTriggerAxis()*.5)+.5);// (-RightStick.getThrottle() * 0.5) + 0.5;
+        
         FORWARD *= multiplier;
         STRAFE *= multiplier;
         ROTATE *= multiplier;
-      // TODO: Enable to drive again!!!!!!!!!  drive.driveCartesian(FORWARD, STRAFE, ROTATE);
-        
+        drive.driveCartesian(FORWARD, -STRAFE, ROTATE);
+
+        SmartDashboard.putNumber("testnumber2", test++);
         SmartDashboard.putNumber("Rotating Arm Encoder", rotatingArmEncoder.getDistance());
         
-        LiftAxisController.set((xboxController.getLeftTriggerAxis()-xboxController.getRightTriggerAxis())*.2);
-        double c = 0;
+        LiftAxisController.set(((xboxController2.getLeftTriggerAxis()-xboxController2.getRightTriggerAxis())*.2));
+        double c = 0; //shrimple and inefficient
         double d = 0;
-
-        if(xboxController.getLeftBumper()) {
+        // if I give it some more voltage hrmrmm I can make it hold up but it will start slipping
+        if(xboxController2.getLeftBumper()) {
             gripperCarriageController.set(1.0);
-            System.out.println("carriage.");
+            //System.out.println("carriage.");
             c=1;
-        }
-        else if(xboxController.getRightBumper()) {
+        } 
+        else if(xboxController2.getRightBumper()) {
             gripperCarriageController.set(-1.0);
             d=-1.0;
         } else {
@@ -363,36 +395,41 @@ public class Robot extends TimedRobot {
             c = 0;
             d = 0;
         }
-        gripperCarriageController.set(0.05+c+d);
+        if(xboxController.getLeftBumper()) {
+            System.out.print("You are an idiot. Stop it.");
+        } 
+        else if(xboxController.getRightBumper()) {
+            System.out.print("You are an idiot. Stop it.");
+        }
+        
+        gripperCarriageController.set(.05+c+d); //TODO: re-enable when the window motor is fixed
+        //theoretically this would let it fight gravity while responding to my controls. Not tuned yet.
 
 
-        AnalogPID();
-
-        if(xboxController.getAButtonPressed()) {
+        if(xboxController2.getAButtonPressed()) {
            a+=1;
         }
+
         if(a%2==0){
-            Stage2Gripper.set(kForward);
+            Stage2Gripper.set(kForward); //toggle switch
         } else {
-            Stage2Gripper.set(kReverse);
+            Stage2Gripper.set(kReverse); 
         }
 
-        if(xboxController.getYButton()) {
-            
+        if(xboxController2.getYButtonPressed()) {
+            Stage1Helper.toggle();
+        }
+       
 
-        }
-        Stage1Helper.set(kForward);
-        if(xboxController.getRightTriggerAxis()>0){
-            //Stage1Helper.set(kForward);
-        } else if (xboxController.getLeftTriggerAxis()>0) {
-            Stage1Helper.set(kReverse);
-        }
-        if(xboxController.getBButton()) {
+        //Stage1Helper.set(kForward); // <----------
+        
+       
+        if(xboxController.getBButtonPressed()) {
             pos1 = 0;
             breakpiston.toggle();
 
         }
-        if(xboxController.getXButton()) {
+        if(xboxController2.getXButton()) {
             sim =1.0;
             
             SmartDashboard.putNumber("pos1", pos1);
@@ -429,10 +466,10 @@ public class Robot extends TimedRobot {
     }
 
     
-    private void LastDitchAnalogControl(double position) {
+    private void LastDitchAnalogControl(double position) { //it holds its own arm fine anyways, honestly wouldnt help us now
         // Read 
         // Turn rotatingArm motor controller on
-       
+        
         double buffer = .01;
         double multipler1 = -.1;
         if ((LiftAxisEncoder.getPosition() <= position-buffer || LiftAxisEncoder.getPosition() >= position+buffer) && sim==1.0) {
@@ -496,7 +533,7 @@ public class Robot extends TimedRobot {
     }
 
     
-    // above is last case scenario
+    // above is last case scenario (not)
     // everything below is for the encoder that doesnt work. Please be advised, I hate magical errors like this.
 
     public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond) {
@@ -508,7 +545,6 @@ public class Robot extends TimedRobot {
 
       }
     
-
     private void rotateArmToPosition(double distance) {
         // Read 
         // Turn rotatingArm motor controller on 
@@ -530,17 +566,19 @@ public class Robot extends TimedRobot {
                 Stage1Helper.set(kReverse);
             } */
             System.out.println(speedcalc*multipler1);
-
-        } else {
-            
         }
         SmartDashboard.putNumber("Encoder Distance", rotatingArmEncoder.getDistance());
         SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());  
-                  
-
     }
-    
-    private void holdRotatingArmPosition() {
+    public double integralfunction(double accel){
+        //yuh angus hours
+        
+        double positionoffset;
+        double velocity;
+        long time = System.currentTimeMillis();
 
+        positionoffset = ((1 / 2) * accel * time * time); //theoretically how physics work
+        
+        return(positionoffset);
     }
 }
