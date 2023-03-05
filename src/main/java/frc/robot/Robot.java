@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
@@ -71,8 +72,6 @@ public class Robot extends TimedRobot {
     private static final int BUTTON_PANEL_USB_PORT = 4;
     
     ADIS16448_IMU gyro = new ADIS16448_IMU();
-    private double[] gyroAccelData = {0.0, 0.0, 0.0};
-    private double[] gyroAngleData = {0.0, 0.0, 0.0};
     MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
     MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
     MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
@@ -175,7 +174,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
-        end = System.currentTimeMillis()+2000;
+        gyro.calibrate();
+        gyro.reset();
+        end = System.currentTimeMillis()+3000;
         hardcodeddistance = 0;
 
     }
@@ -187,18 +188,26 @@ public class Robot extends TimedRobot {
         // TODO here:
         // Calculate desired heading from the vision module
         // heading = 45;
-
+        
         gyro_error = heading - gyro.getAngle();
         gyro.getAccelX();
-
+        //NO WHILE LOOPS THEY CAUSED US TO BE DISABLED FOR 4 QUAL MATCHES - for future teams
         double x = 0; // TODO: Figure this from the kp * error
         double y = 0; // TODO: Figure this from kp * error
         double z = 0; // TODO: Figure this form kp * error
+        if (System.currentTimeMillis() < end){
+            System.out.println(end);
+            System.out.println(System.currentTimeMillis());
+            drive.driveCartesian(-0.25, y, z);
+        } else {
+            drive.driveCartesian(0, 0, 0);
+        }
     }
     @Override
     public void robotInit() {
         //here
         gyro.calibrate();
+        gyro.reset();
         //Shuffleboard.getTab("Fun Stuff").add(gyro);
 
         //owo - misha
@@ -288,23 +297,15 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Encoder", rotatingArmEncoder.getDistance());
         
         SmartDashboard.putNumber("Gyro2", gyro.getRate());
-        
+        putGyroDataOnDashboard();
+
         // System.out.println("Periodic");
     }
 
     private void putGyroDataOnDashboard() {
-        // gyroAccelData[0] = gyro.getAccelX();
-        // gyroAccelData[1] = gyro.getAccelY();
-        // gyroAccelData[2] = gyro.getAccelZ();
-//        SmartDashboard.putNumberArray("Gryo Accel", gyroAccelData);
         SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
         SmartDashboard.putNumber("Gyro Accel Y", gyro.getAccelY());
         SmartDashboard.putNumber("Gyro Accel Z", gyro.getAccelZ());
-
-        // gyroAngleData[0] = gyro.getGyroAngleX();
-        // gyroAngleData[1] = gyro.getGyroAngleY();
-        // gyroAngleData[2] = gyro.getGyroAngleZ();
-        // SmartDashboard.putNumberArray("Gryo Angles", gyroAngleData);
 
         SmartDashboard.putNumber("Gyro Angle X", gyro.getGyroAngleX());
         SmartDashboard.putNumber("Gyro Angle Y", gyro.getGyroAngleY());
@@ -328,6 +329,11 @@ public class Robot extends TimedRobot {
         return 0.0;
     }
     int test = 1;
+    @Override
+    public void teleopInit() {
+        gyro.calibrate();
+        gyro.reset();
+    }
     @Override
     public void teleopPeriodic() {
         dataLock.lock();
@@ -353,7 +359,6 @@ public class Robot extends TimedRobot {
         // m_motor.set(1);
         //System.out.println(pos1+" X pressed | rotations: " + rotations+ " | position: "+LiftAxisEncoder.getPosition()+" | carriage enc: "+rotatingArmEncoder.getDistance());
         //System.out.println(gyro.getAccelX()+" x accel | " + gyro.getAccelY() + " y accel | " + gyro.getAccelZ() + " z accel | " + gyro.getYComplementaryAngle() + " y angle | " + System.currentTimeMillis() + " time ");
-        putGyroDataOnDashboard();
 
         var STRAFE = 0.0;
         STRAFE = bufferJoystickInput(leftJoystickX, 0.2); 
@@ -464,6 +469,7 @@ public class Robot extends TimedRobot {
 
         //SmartDashboard.putBoolean("limitSwitch", testLimitSwitch.get());
     }
+
 
     
     private void LastDitchAnalogControl(double position) { //it holds its own arm fine anyways, honestly wouldnt help us now
