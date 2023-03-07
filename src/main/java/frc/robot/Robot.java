@@ -40,11 +40,12 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
+
 //liveshare link
 /**
-
-I blame neil for this existing. - DJ
-
+ * 
+ * I blame neil for this existing. - DJ
+ * 
  * <p>
  * In addition, the encoder value of an encoder connected to ports 0 and 1 is
  * consistently sent
@@ -55,47 +56,54 @@ public class Robot extends TimedRobot {
     Thread m_visionThread;
     long t = System.currentTimeMillis();
     long end;
-    private static final int FRONT_LEFT_WHEEL_CAN_ID = 3; 
-    private static final int BACK_LEFT_WHEEL_CAN_ID = 1; 
-    private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2; 
+    private static final int FRONT_LEFT_WHEEL_CAN_ID = 3;
+    private static final int BACK_LEFT_WHEEL_CAN_ID = 1;
+    private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2;
     private static final int BACK_RIGHT_WHEEL_CAN_ID = 4;
-    
+
     private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6;
     private static final int ROTATING_ARM_ENCODER_PIN_A = 2; // TODO: Set this properly once it's plugged in
-    private static final int ROTATING_ARM_ENCODER_PIN_B = 3; // currently set up to be the gripper carriage encoder still doesnt work
+    private static final int ROTATING_ARM_ENCODER_PIN_B = 3; // currently set up to be the gripper carriage encoder
+                                                             // still doesnt work \o/
 
     private static final int GRIPPER_CARRIAGE_CONTROLLER_CAN_ID = 9;
-    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 1; // 
-    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 0; // 
-    
-    private static final int XBOX_CONTROLLER_USB_PORT = 0; 
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 1; //
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 0; //
+
+    private static final int XBOX_CONTROLLER_USB_PORT = 0;
     private static final int BUTTON_PANEL_USB_PORT = 4;
-    
+
+    boolean autoswitcher = false; //for switching auto modes before auto
+    boolean automode;   //actual switch variable
     ADIS16448_IMU gyro = new ADIS16448_IMU();
     MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
     MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
     MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
     MotorController backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID);
-    
+
     XboxController xboxController = new XboxController(XBOX_CONTROLLER_USB_PORT);
     XboxController xboxController2 = new XboxController(1);
     GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
 
     MecanumDrive drive = new MecanumDrive(frontLeft, backLeft, frontRight, backRight);
-    
-    private Encoder rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A, 
-    ROTATING_ARM_ENCODER_PIN_B, 
-    false, 
-    Encoder.EncodingType.k2X);
-    //MotorController rotatingArmController = new SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID); //cant have two motor controller things on. Switch this back to RO...etc when the encoder magically works
+
+    private Encoder rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A,
+            ROTATING_ARM_ENCODER_PIN_B,
+            false,
+            Encoder.EncodingType.k2X);
+    // MotorController rotatingArmController = new
+    // SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID); //cant have two motor
+    // controller things on. Switch this back to RO...etc when the encoder magically
+    // works
     CANSparkMax LiftAxisController;
 
-    private Encoder gripperCarriageEncoder; 
-    private CANSparkMax gripperCarriageController = new CANSparkMax(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID, MotorType.kBrushed);
+    private Encoder gripperCarriageEncoder;
+    private CANSparkMax gripperCarriageController = new CANSparkMax(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID,
+            MotorType.kBrushed);
 
     private RelativeEncoder LiftAxisEncoder;
     private SparkMaxPIDController LiftAxisPID;
-    
+
     int a = 0;
     DoubleSolenoid Stage1Helper;
     DoubleSolenoid Stage2Gripper;
@@ -110,12 +118,12 @@ public class Robot extends TimedRobot {
     // Use gyro declaration from above here
 
     // The gain for a simple P loop
-    double kP = 0.1; 
+    double kP = 0.1;
     double kI = 1e-4;
-    double kD = 1; 
-    double kIz = 0; 
-    double kFF = 0; 
-    double kMaxOutput = 1; 
+    double kD = 1;
+    double kIz = 0;
+    double kFF = 0;
+    double kMaxOutput = 1;
     double kMinOutput = -1;
 
     // The heading of the robot when starting the motion
@@ -127,16 +135,15 @@ public class Robot extends TimedRobot {
     MotorControllerGroup leftMotors = new MotorControllerGroup(frontLeft, backLeft);
     MotorControllerGroup rightMotors = new MotorControllerGroup(frontRight, backRight);
 
-
     // Gains are for example purposes only - must be determined for your own robot!
-    // TODO: Update gain vals in the feed forward 
+    // TODO: Update gain vals in the feed forward
     private final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(1, 3);
     private final PIDController rotatingArmPIDController = new PIDController(1, 1, 0);
 
     // private DigitalInput testLimitSwitch = new DigitalInput(0);
 
     private void initializeRotatingArmEncoder() {
-         // TODO: Check if this is the Encoding type we want
+        // TODO: Check if this is the Encoding type we want
         // Use SetDistancePerPulse to set the multiplier for GetDistance
         // This is set up assuming a 6 inch wheel with a 360 CPRh encoder.
 
@@ -144,13 +151,13 @@ public class Robot extends TimedRobot {
 
         LiftAxisEncoder.setPosition(0);
 
-        rotatingArmEncoder.reset(); //GRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH
+        rotatingArmEncoder.reset(); // GRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH
     }
 
     private void initializeLastDitchEncoderAnalogPID() {
-            // PID coefficients
+        // PID coefficients
         // for future lookers, we never used this.
-       LiftAxisPID = LiftAxisController.getPIDController();
+        LiftAxisPID = LiftAxisController.getPIDController();
 
         // set PID coefficients
         LiftAxisPID.setP(kP);
@@ -169,111 +176,124 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Max Output", kMaxOutput);
         SmartDashboard.putNumber("Min Output", kMinOutput);
         SmartDashboard.putNumber("Set Rotations", 0);
-        
+
     }
 
     @Override
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
-        end = System.currentTimeMillis()+3000;
+        if (automode == false){
+            end = System.currentTimeMillis() + 30000;
+        } else {
+            end = System.currentTimeMillis() + 30000;
+        }
+        
         hardcodeddistance = 0;
-
+        autoswitcher = true;
     }
 
-    //
+    // variables for auto
+    double x = 0; // TODO: Figure this from the kp * error
+    double y = 0; // TODO: Figure this from kp * error
+    double z = 0; // TODO: Figure this form kp * error
+    
     @Override
     public void autonomousPeriodic() {
-
         // TODO here:
         // Calculate desired heading from the vision module
-        // heading = 45;
-        
+        heading = 2;
+
         gyro_error = heading - gyro.getAngle();
         gyro.getAccelX();
-        //NO WHILE LOOPS THEY CAUSED US TO BE DISABLED FOR 4 QUAL MATCHES - for future teams
-        double x = 0; // TODO: Figure this from the kp * error
-        double y = 0; // TODO: Figure this from kp * error
-        double z = 0; // TODO: Figure this form kp * error
-        if (System.currentTimeMillis() < end){
-            System.out.println(end);
-            System.out.println(System.currentTimeMillis());
-            drive.driveCartesian(-0.25, y, z);
+        // NO WHILE LOOPS THEY CAUSED US TO BE DISABLED FOR 4 QUAL MATCHES - for future
+        // SO SORRHY
+        
+        // teams
+
+        SmartDashboard.putNumber("new X: ", x);
+        SmartDashboard.putNumber("new Y: ", y);
+        if (System.currentTimeMillis() < end && automode == true) {
+
+            gyrocorrect();
+            drive.driveCartesian(x, y, z); // TODO: This is wrong
+        } else if(System.currentTimeMillis() < end && automode == false) {
+            System.out.print("a");
         } else {
             drive.driveCartesian(0, 0, 0);
         }
+
     }
+
     @Override
     public void robotInit() {
-        //here
+        // here
         gyro.calibrate();
         gyro.reset();
-        //Shuffleboard.getTab("Fun Stuff").add(gyro);
+        // Shuffleboard.getTab("Fun Stuff").add(gyro);
 
-        //owo - misha
+        
         Stage1Helper = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 7, 5);
         Stage2Gripper = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 4, 6);
-        Stage1Helper.set(kReverse); //real init hours
+        Stage1Helper.set(kReverse); // real init hours
 
         breakpiston = new Solenoid(PneumaticsModuleType.CTREPCM, 1);
-        breakpiston.set(true); //true on jah - DJ
+        breakpiston.set(true); // true on jah - DJ
         pos1 = 0;
         sim = 0;
 
-        //Worst case scenario setup for the NEO brushless encoder.
+        // Worst case scenario setup for the NEO brushless encoder.
         LiftAxisController = new CANSparkMax(ROTATING_ARM_CONTROLLER_CAN_ID, MotorType.kBrushless);
         LiftAxisEncoder = LiftAxisController.getEncoder();
 
+        // rotatingArmController.set(0.0);
 
+        m_visionThread = new Thread(
+                () -> {
+                    // Get the UsbCamera from CameraServer
+                    UsbCamera camera = CameraServer.startAutomaticCapture();
+                    // Set the resolution
+                    camera.setResolution(640, 480);
 
-        //rotatingArmController.set(0.0);
-        
-        m_visionThread =
-        new Thread(
-            () -> {
-              // Get the UsbCamera from CameraServer
-              UsbCamera camera = CameraServer.startAutomaticCapture();
-              // Set the resolution
-              camera.setResolution(640, 480);
+                    // Get a CvSink. This will capture Mats from the camera
+                    CvSink cvSink = CameraServer.getVideo();
+                    // Setup a CvSource. This will send images back to the Dashboard
+                    CvSource outputStream = CameraServer.putVideo("Rectangle", 640, 480);
 
-              // Get a CvSink. This will capture Mats from the camera
-              CvSink cvSink = CameraServer.getVideo();
-              // Setup a CvSource. This will send images back to the Dashboard
-              CvSource outputStream = CameraServer.putVideo("Rectangle", 640, 480);
+                    // Mats are very memory expensive. Lets reuse this Mat.
+                    Mat mat = new Mat();
 
-              // Mats are very memory expensive. Lets reuse this Mat.
-              Mat mat = new Mat();
+                    // This cannot be 'true'. The program will never exit if it is. This
+                    // lets the robot stop this thread when restarting robot code or
+                    // deploying.
+                    while (!Thread.interrupted()) {
+                        // Tell the CvSink to grab a frame from the camera and put it
+                        // in the source mat. If there is an error notify the output.
+                        if (cvSink.grabFrame(mat) == 0) {
+                            // Send the output the error.
+                            // outputStream.notifyError(cvSink.getError());
+                            // skip the rest of the current
 
-              // This cannot be 'true'. The program will never exit if it is. This
-              // lets the robot stop this thread when restarting robot code or
-              // deploying.
-              while (!Thread.interrupted()) {
-                // Tell the CvSink to grab a frame from the camera and put it
-                // in the source mat.  If there is an error notify the output.
-                if (cvSink.grabFrame(mat) == 0) {
-                  // Send the output the error.
-                  //outputStream.notifyError(cvSink.getError());
-                  // skip the rest of the current 
-                  
-                  continue;
-                }
-                // Put a rectangle on the image
-                Imgproc.rectangle(
-                    mat, new Point(100, 100), new Point(400, 400), new Scalar(255, 255, 255), 5);
-                // Give the output stream a new image to display
-                outputStream.putFrame(mat);
-              }
-            });
-    m_visionThread.setDaemon(true); //haha daemon!
-    m_visionThread.start();
-        
-        // get the library for the ADIS working. (FIXED but im leaving the comment in because I like how awful this code looks)
+                            continue;
+                        }
+                        // Put a rectangle on the image
+                        Imgproc.rectangle(
+                                mat, new Point(100, 100), new Point(400, 400), new Scalar(255, 255, 255), 5);
+                        // Give the output stream a new image to display
+                        outputStream.putFrame(mat);
+                    }
+                });
+        m_visionThread.setDaemon(true); // haha daemon!
+        m_visionThread.start();
+
+        // get the library for the ADIS working. (FIXED but im leaving the comment in
+        // because I like how awful this code looks)
         // I cannot install it and its causing me issues.
 
         initializeRotatingArmEncoder();
 
-      initializeLastDitchEncoderAnalogPID();
-        
+        initializeLastDitchEncoderAnalogPID();
+
         // Set setpoint to current heading at start of auto
         heading = gyro.getAngle();
 
@@ -284,9 +304,9 @@ public class Robot extends TimedRobot {
 
         System.out.println("Robot Inited");
 
-        //yuh some demo code I slapped in here
-        
-}
+        // yuh some demo code I slapped in here
+
+    }
 
     /*
      * The RobotPeriodic function is called every control packet no matter the
@@ -295,11 +315,15 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         SmartDashboard.putNumber("Encoder", rotatingArmEncoder.getDistance());
-        
+
         SmartDashboard.putNumber("Gyro2", gyro.getRate());
         putGyroDataOnDashboard();
 
         // System.out.println("Periodic");
+        //temporary button
+        if(xboxController.getBButton() && autoswitcher==false) {
+            automode = !automode;
+        }
     }
 
     private void putGyroDataOnDashboard() {
@@ -311,6 +335,7 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Gyro Angle Y", gyro.getGyroAngleY());
         SmartDashboard.putNumber("Gyro Angle Z", gyro.getGyroAngleZ());
 
+        SmartDashboard.putNumber("Gyro Angle: ", gyro.getAngle());
     }
 
     private final Lock dataLock = new ReentrantLock();
@@ -328,12 +353,15 @@ public class Robot extends TimedRobot {
         }
         return 0.0;
     }
+
     int test = 1;
+
     @Override
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
     }
+
     @Override
     public void teleopPeriodic() {
         dataLock.lock();
@@ -344,7 +372,8 @@ public class Robot extends TimedRobot {
         double leftJoystickX = xboxController.getLeftX();
 
         double rightJoystickX = xboxController.getRightX();
-        //System.out.println(rotatingArmEncoder.getDistance()+" arm rotation angle position ---------");
+        // System.out.println(rotatingArmEncoder.getDistance()+" arm rotation angle
+        // position ---------");
         // int panelJoystickAngle = buttonPanel.getPOV();
         // boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
         // boolean button2_pressed = buttonPanel.getRawButtonPressed(2);
@@ -357,24 +386,29 @@ public class Robot extends TimedRobot {
 
         // motor speed is -1 to 1
         // m_motor.set(1);
-        //System.out.println(pos1+" X pressed | rotations: " + rotations+ " | position: "+LiftAxisEncoder.getPosition()+" | carriage enc: "+rotatingArmEncoder.getDistance());
-        //System.out.println(gyro.getAccelX()+" x accel | " + gyro.getAccelY() + " y accel | " + gyro.getAccelZ() + " z accel | " + gyro.getYComplementaryAngle() + " y angle | " + System.currentTimeMillis() + " time ");
+        // System.out.println(pos1+" X pressed | rotations: " + rotations+ " | position:
+        // "+LiftAxisEncoder.getPosition()+" | carriage enc:
+        // "+rotatingArmEncoder.getDistance());
+        // System.out.println(gyro.getAccelX()+" x accel | " + gyro.getAccelY() + " y
+        // accel | " + gyro.getAccelZ() + " z accel | " + gyro.getYComplementaryAngle()
+        // + " y angle | " + System.currentTimeMillis() + " time ");
 
         var STRAFE = 0.0;
-        STRAFE = bufferJoystickInput(leftJoystickX, 0.2); 
-        STRAFE *= -1; 
+        STRAFE = bufferJoystickInput(leftJoystickX, 0.2);
+        STRAFE *= -1;
 
         var FORWARD = 0.0;
         FORWARD = bufferJoystickInput(leftJoystickY, 0.2);
-        // Joystick direction is opposite 
+        // Joystick direction is opposite
         FORWARD *= -1;
 
         var ROTATE = 0.0;
         // Buffer the input
-        ROTATE = bufferJoystickInput(rightJoystickX, 0.2); 
+        ROTATE = bufferJoystickInput(rightJoystickX, 0.2);
 
-        var multiplier = (-(xboxController.getLeftTriggerAxis()*.4)+(xboxController.getRightTriggerAxis()*.5)+.5);// (-RightStick.getThrottle() * 0.5) + 0.5;
-        
+        var multiplier = (-(xboxController.getLeftTriggerAxis() * .4) + (xboxController.getRightTriggerAxis() * .5)
+                + .5);// (-RightStick.getThrottle() * 0.5) + 0.5;
+
         FORWARD *= multiplier;
         STRAFE *= multiplier;
         ROTATE *= multiplier;
@@ -382,72 +416,69 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putNumber("testnumber2", test++);
         SmartDashboard.putNumber("Rotating Arm Encoder", rotatingArmEncoder.getDistance());
-        
-        LiftAxisController.set(((xboxController2.getLeftTriggerAxis()-xboxController2.getRightTriggerAxis())*.2));
-        double c = 0; //shrimple and inefficient
+
+        LiftAxisController.set(((xboxController2.getLeftTriggerAxis() - xboxController2.getRightTriggerAxis()) * .2));
+        double c = 0; // shrimple and inefficient
         double d = 0;
-        // if I give it some more voltage hrmrmm I can make it hold up but it will start slipping
-        if(xboxController2.getLeftBumper()) {
+        // if I give it some more voltage hrmrmm I can make it hold up but it will start
+        // slipping
+        if (xboxController2.getLeftBumper()) {
             gripperCarriageController.set(1.0);
-            //System.out.println("carriage.");
-            c=1;
-        } 
-        else if(xboxController2.getRightBumper()) {
+            // System.out.println("carriage.");
+            c = 1;
+        } else if (xboxController2.getRightBumper()) {
             gripperCarriageController.set(-1.0);
-            d=-1.0;
+            d = -1.0;
         } else {
             gripperCarriageController.set(0);
             c = 0;
             d = 0;
         }
-        if(xboxController.getLeftBumper()) {
+        if (xboxController.getLeftBumper()) {
             System.out.print("You are an idiot. Stop it.");
-        } 
-        else if(xboxController.getRightBumper()) {
+        } else if (xboxController.getRightBumper()) {
             System.out.print("You are an idiot. Stop it.");
         }
-        
-        gripperCarriageController.set(.05+c+d); //TODO: re-enable when the window motor is fixed
-        //theoretically this would let it fight gravity while responding to my controls. Not tuned yet.
 
+        gripperCarriageController.set(.05 + c + d); // TODO: re-enable when the window motor is fixed
+        // theoretically this would let it fight gravity while responding to my
+        // controls. Not tuned yet.
 
-        if(xboxController2.getAButtonPressed()) {
-           a+=1;
+        if (xboxController2.getAButtonPressed()) {
+            a += 1;
         }
 
-        if(a%2==0){
-            Stage2Gripper.set(kForward); //toggle switch
+        if (a % 2 == 0) {
+            Stage2Gripper.set(kForward); // toggle switch
         } else {
-            Stage2Gripper.set(kReverse); 
+            Stage2Gripper.set(kReverse);
         }
 
-        if(xboxController2.getYButtonPressed()) {
+        if (xboxController2.getYButtonPressed()) {
             Stage1Helper.toggle();
         }
-       
 
-        //Stage1Helper.set(kForward); // <----------
-        
-       
-        if(xboxController.getBButtonPressed()) {
+        // Stage1Helper.set(kForward); // <----------
+
+        if (xboxController.getBButtonPressed()) {
             pos1 = 0;
             breakpiston.toggle();
 
         }
-        if(xboxController2.getXButton()) {
-            sim =1.0;
-            
+        if (xboxController2.getXButton()) {
+            sim = 1.0;
+
             SmartDashboard.putNumber("pos1", pos1);
-            
-            //LastDitchAnalogControl(pos1);
-            //LiftAxisController.set(pos1);
+
+            // LastDitchAnalogControl(pos1);
+            // LiftAxisController.set(pos1);
 
         } else {
             sim = 0.0;
-            
+
             // If X is not pressed, stop the arm from moving
-            //LiftAxisEncoder.setPosition(0);
-           // rotatingArmController.set(0.0); 
+            // LiftAxisEncoder.setPosition(0);
+            // rotatingArmController.set(0.0);
         }
 
         /*
@@ -460,131 +491,172 @@ public class Robot extends TimedRobot {
          */
         // drive.close();
 
-       // System.out.println("FORWARD: " + FORWARD + " STRAFE: " + STRAFE + " ROTATE: " + ROTATE);
+        // System.out.println("FORWARD: " + FORWARD + " STRAFE: " + STRAFE + " ROTATE: "
+        // + ROTATE);
 
         SmartDashboard.putNumber("Gyro Rate ", gyro.getRate());
         SmartDashboard.putNumber("Encoder Distance", rotatingArmEncoder.getDistance());
-        SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());  
-        SmartDashboard.putNumber("Encoder Raw", rotatingArmEncoder.getRaw());  
+        SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());
+        SmartDashboard.putNumber("Encoder Raw", rotatingArmEncoder.getRaw());
 
-        //SmartDashboard.putBoolean("limitSwitch", testLimitSwitch.get());
+        // SmartDashboard.putBoolean("limitSwitch", testLimitSwitch.get());
     }
 
-
-    
-    private void LastDitchAnalogControl(double position) { //it holds its own arm fine anyways, honestly wouldnt help us now
-        // Read 
+    private void LastDitchAnalogControl(double position) { // it holds its own arm fine anyways, honestly wouldnt help
+                                                           // us now
+        // Read
         // Turn rotatingArm motor controller on
-        
+
         double buffer = .01;
         double multipler1 = -.1;
-        if ((LiftAxisEncoder.getPosition() <= position-buffer || LiftAxisEncoder.getPosition() >= position+buffer) && sim==1.0) {
+        if ((LiftAxisEncoder.getPosition() <= position - buffer || LiftAxisEncoder.getPosition() >= position + buffer)
+                && sim == 1.0) {
             double differencer = LiftAxisEncoder.getPosition() - position;
             // please for the love of god work without backlash issues, I am coping hard.
-            double speedcalc = ((differencer)/(Math.abs(differencer)));
+            double speedcalc = ((differencer) / (Math.abs(differencer)));
             // so shrimple its unreal (not) - DJ
-            
-            AnalogSpeed(speedcalc*multipler1); // TODO: Make this speed a bit smarter
-            
-            if (speedcalc == 1){
-                //Stage1Helper.set(kForward);
-            } else if(speedcalc == -1) {
-               
-            } 
+
+            AnalogSpeed(speedcalc * multipler1); // TODO: Make this speed a bit smarter
+
+            if (speedcalc == 1) {
+                // Stage1Helper.set(kForward);
+            } else if (speedcalc == -1) {
+
+            }
 
         }
     }
 
-    
-
-    
-    public void AnalogSpeed(double rate ){
+    public void AnalogSpeed(double rate) {
         final double feedForward = LiftAxisPID.getFF();
         rotations = rate;
-       // final double output =
-       //     LiftAxisPID.calculate(LiftAxisE.getVelocity(), rate);
-        //LiftAxisController.setVoltage(LiftAxisPID.getOutputMax() + feedForward); 
-    LiftAxisPID.setReference(rotations, CANSparkMax.ControlType.kPosition);
-    
+        // final double output =
+        // LiftAxisPID.calculate(LiftAxisE.getVelocity(), rate);
+        // LiftAxisController.setVoltage(LiftAxisPID.getOutputMax() + feedForward);
+        LiftAxisPID.setReference(rotations, CANSparkMax.ControlType.kPosition);
 
-    System.out.print(rotations);
-    
+        System.out.print(rotations);
+
     }
 
-    public void AnalogPID(){
+    public void AnalogPID() {
         // read PID coefficients from SmartDashboard
-    double p = SmartDashboard.getNumber("P Gain", 0);
-    double i = SmartDashboard.getNumber("I Gain", 0);
-    double d = SmartDashboard.getNumber("D Gain", 0);
-    double iz = SmartDashboard.getNumber("I Zone", 0);
-    double ff = SmartDashboard.getNumber("Feed Forward", 0);
-    double max = SmartDashboard.getNumber("Max Output", 0);
-    double min = SmartDashboard.getNumber("Min Output", 0);
-    
+        double p = SmartDashboard.getNumber("P Gain", 0);
+        double i = SmartDashboard.getNumber("I Gain", 0);
+        double d = SmartDashboard.getNumber("D Gain", 0);
+        double iz = SmartDashboard.getNumber("I Zone", 0);
+        double ff = SmartDashboard.getNumber("Feed Forward", 0);
+        double max = SmartDashboard.getNumber("Max Output", 0);
+        double min = SmartDashboard.getNumber("Min Output", 0);
 
-    // if PID coefficients on SmartDashboard have changed, write new values to controller
-    if((p != kP)) { LiftAxisPID.setP(p); kP = p; }
-    if((i != kI)) { LiftAxisPID.setI(i); kI = i; }
-    if((d != kD)) { LiftAxisPID.setD(d); kD = d; }
-    if((iz != kIz)) { LiftAxisPID.setIZone(iz); kIz = iz; }
-    if((ff != kFF)) { LiftAxisPID.setFF(ff); kFF = ff; }
-    if((max != kMaxOutput) || (min != kMinOutput)) { 
-      LiftAxisPID.setOutputRange(min, max); 
-      kMinOutput = min; kMaxOutput = max; 
+        // if PID coefficients on SmartDashboard have changed, write new values to
+        // controller
+        if ((p != kP)) {
+            LiftAxisPID.setP(p);
+            kP = p;
+        }
+        if ((i != kI)) {
+            LiftAxisPID.setI(i);
+            kI = i;
+        }
+        if ((d != kD)) {
+            LiftAxisPID.setD(d);
+            kD = d;
+        }
+        if ((iz != kIz)) {
+            LiftAxisPID.setIZone(iz);
+            kIz = iz;
+        }
+        if ((ff != kFF)) {
+            LiftAxisPID.setFF(ff);
+            kFF = ff;
+        }
+        if ((max != kMaxOutput) || (min != kMinOutput)) {
+            LiftAxisPID.setOutputRange(min, max);
+            kMinOutput = min;
+            kMaxOutput = max;
+        }
+        SmartDashboard.putNumber("SetPoint", rotations);
+        SmartDashboard.putNumber("ProcessVariable", LiftAxisEncoder.getPosition());
+        SmartDashboard.putNumber("Output", LiftAxisController.getAppliedOutput());
+
     }
-    SmartDashboard.putNumber("SetPoint", rotations);
-    SmartDashboard.putNumber("ProcessVariable", LiftAxisEncoder.getPosition());
-    SmartDashboard.putNumber("Output", LiftAxisController.getAppliedOutput());
 
-    }
-
-    
     // above is last case scenario (not)
-    // everything below is for the encoder that doesnt work. Please be advised, I hate magical errors like this.
+    // everything below is for the encoder that doesnt work. Please be advised, I
+    // hate magical errors like this.
 
     public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond) {
         final double feedForward = rotatingArmFeedForward.calculate(rotatingArmSpeedMetersPerSecond);
-        
-        final double output =
-            rotatingArmPIDController.calculate(rotatingArmEncoder.getRate(), rotatingArmSpeedMetersPerSecond);
-        //rotatingArmController.setVoltage(output + feedForward);
 
-      }
-    
+        final double output = rotatingArmPIDController.calculate(rotatingArmEncoder.getRate(),
+                rotatingArmSpeedMetersPerSecond);
+        // rotatingArmController.setVoltage(output + feedForward);
+
+    }
+
     private void rotateArmToPosition(double distance) {
-        // Read 
-        // Turn rotatingArm motor controller on 
-       // Stage1Helper.set(kOff);
+        // Read
+        // Turn rotatingArm motor controller on
+        // Stage1Helper.set(kOff);
         double buffer = .1;
         double multipler1 = -0.01;
-        if ((rotatingArmEncoder.getDistance() <= distance-buffer || rotatingArmEncoder.getDistance() >= distance+buffer) && sim == 1.0) {
+        if ((rotatingArmEncoder.getDistance() <= distance - buffer
+                || rotatingArmEncoder.getDistance() >= distance + buffer) && sim == 1.0) {
             double differencer = rotatingArmEncoder.getDistance() - distance;
-            // god forbid this is wrong - if differencer is negative then it goes down right????
+            // god forbid this is wrong - if differencer is negative then it goes down
+            // right????
             // and positive means up???
-            double speedcalc = ((differencer)/(Math.abs(differencer)));
-            // actual distance = .1, distance = .45 then .1 - .45 is negative then you have to go
+            double speedcalc = ((differencer) / (Math.abs(differencer)));
+            // actual distance = .1, distance = .45 then .1 - .45 is negative then you have
+            // to go
 
             setRotatingArmSpeed(speedcalc * multipler1); // TODO: Make this speed a bit smarter
-           // Stage1Helper.set(kForward);
-            /*if (speedcalc == 1){
-                Stage1Helper.set(kForward);
-            } else if(speedcalc == 1) {
-                Stage1Helper.set(kReverse);
-            } */
-            System.out.println(speedcalc*multipler1);
+            // Stage1Helper.set(kForward);
+            /*
+             * if (speedcalc == 1){
+             * Stage1Helper.set(kForward);
+             * } else if(speedcalc == 1) {
+             * Stage1Helper.set(kReverse);
+             * }
+             */
+            System.out.println(speedcalc * multipler1);
         }
         SmartDashboard.putNumber("Encoder Distance", rotatingArmEncoder.getDistance());
-        SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());  
+        SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());
     }
-    public double integralfunction(double accel){
-        //yuh angus hours
-        
+
+    public double integralfunction(double accel) {
+        // yuh angus hours
+
         double positionoffset;
         double velocity;
         long time = System.currentTimeMillis();
 
-        positionoffset = ((1 / 2) * accel * time * time); //theoretically how physics work
+        positionoffset = ((1 / 2) * accel * time * time); // theoretically how physics work
+
+        return (positionoffset);
+    }
+    public void gyrocorrect() {
+        //please correct thineself sir!
+
         
-        return(positionoffset);
+            System.out.println(gyro.getGyroAngleX());
+            if (gyro.getGyroAngleX() > 0.1) {
+                // z = .1;
+            } else if (gyro.getGyroAngleX() < -0.1) {
+                // z = -0.1;
+            } else {
+                z = 0;
+            }
+
+            if (gyro.getGyroAngleY() > 0.2) {
+                // x = -0.1;
+            } else if (gyro.getGyroAngleY() < -0.2) {
+                // x = 0.1;
+            } else {
+                x = 0;
+            }
+        
     }
 }
