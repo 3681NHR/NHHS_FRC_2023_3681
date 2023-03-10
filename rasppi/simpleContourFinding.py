@@ -194,7 +194,9 @@ if __name__ == "__main__":
     width = 160 # TODO: Get from the config file
     height = 120 
 
+    ## Getting the input video from the camera
     sink = CameraServer.getVideo()
+    ## Setting up all the output video 
     output = CameraServer.putVideo("RawInput", width, height)
     output_processed = CameraServer.putVideo("ProcessedOutput", width, height)
     output_grayed = CameraServer.putVideo("Step 1: Gray", width, height)

@@ -40,6 +40,13 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
+import edu.wpi.first.math.kinematics.MecanumDriveOdometry;
+import edu.wpi.first.math.geometry.Translation2d;
+import com.pathplanner.lib.PathPlanner;
+import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
 
 //liveshare link
 /**
@@ -76,17 +83,25 @@ public class Robot extends TimedRobot {
     boolean autoswitcher = false; //for switching auto modes before auto
     boolean automode;   //actual switch variable
     ADIS16448_IMU gyro = new ADIS16448_IMU();
-    MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
-    MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
-    MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
-    MotorController backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID);
-
+    // MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
+    // MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
+    // MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
+    // MotorController backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID);
+    CANSparkMax frontLeft = new CANSparkMax(FRONT_LEFT_WHEEL_CAN_ID, MotorType.kBrushless);
+    CANSparkMax backLeft = new CANSparkMax(BACK_LEFT_WHEEL_CAN_ID, MotorType.kBrushless);
+    CANSparkMax frontRight = new CANSparkMax(FRONT_RIGHT_WHEEL_CAN_ID, MotorType.kBrushless);
+    CANSparkMax backRight = new CANSparkMax(BACK_RIGHT_WHEEL_CAN_ID, MotorType.kBrushless);
     XboxController xboxController = new XboxController(XBOX_CONTROLLER_USB_PORT);
     XboxController xboxController2 = new XboxController(1);
     GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
 
     MecanumDrive drive = new MecanumDrive(frontLeft, backLeft, frontRight, backRight);
 
+    private RelativeEncoder frontLeftEnc = frontLeft.getEncoder();
+    private RelativeEncoder backLeftEnc = backLeft.getEncoder();
+    private RelativeEncoder frontRightEnc = frontRight.getEncoder();
+    private RelativeEncoder backRightEnc = backRight.getEncoder();
+        
     private Encoder rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A,
             ROTATING_ARM_ENCODER_PIN_B,
             false,
@@ -114,7 +129,7 @@ public class Robot extends TimedRobot {
     double hardcodeddistance;
     NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
     // We'll use this to read values from the Raspberry Pi vision component
-    NetworkTable visionNetworkTable = networkTables.getTable("vision");
+    NetworkTable visionNetworkTable = networkTables.getTable("Vision");
     // Use gyro declaration from above here
 
     // The gain for a simple P loop
@@ -139,6 +154,30 @@ public class Robot extends TimedRobot {
     // TODO: Update gain vals in the feed forward
     private final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(1, 3);
     private final PIDController rotatingArmPIDController = new PIDController(1, 1, 0);
+
+    // Locations of the wheels relative to the robot center.
+Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
+Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
+Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
+Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
+
+// Creating my kinematics object using the wheel locations.
+MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
+  m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation
+);
+
+// Creating my odometry object from the kinematics object and the initial wheel positions.
+// Here, our starting pose is 5 meters along the long end of the field and in the
+// center of the field along the short end, facing the opposing alliance wall.
+//  MecanumDriveOdometry m_odometry = new MecanumDriveOdometry(
+//    m_kinematics,
+//    gyro.getYawAxis(),
+//    new MecanumDriveWheelPositions(
+//      frontLeftEnc.getPosition(), frontRightEnc.getPosition(),
+//      backLeftEnc.getPosition(), backRightEnc.getPosition()
+//    ),
+//    new Pose2d(5.0, 13.5, new Rotation2d())
+//  );
 
     // private DigitalInput testLimitSwitch = new DigitalInput(0);
 
