@@ -183,6 +183,7 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
+        automode = true;
         if (automode == false){
             end = System.currentTimeMillis() + 30000;
         } else {
@@ -206,16 +207,28 @@ public class Robot extends TimedRobot {
 
         gyro_error = heading - gyro.getAngle();
         gyro.getAccelX();
-        // NO WHILE LOOPS THEY CAUSED US TO BE DISABLED FOR 4 QUAL MATCHES - for future
-        // SO SORRHY
-        
-        // teams
 
         SmartDashboard.putNumber("new X: ", x);
         SmartDashboard.putNumber("new Y: ", y);
         if (System.currentTimeMillis() < end && automode == true) {
+            //gyrocorrect();
+            double setpoint = -180.0;
+            System.out.println(gyro.getGyroAngleX());
+            if (gyro.getGyroAngleX() > 0.2+setpoint) {
+                 z = .05;
+            } else if (gyro.getGyroAngleX() < -0.1 + setpoint) {
+                 z = -0.05;
+            } else {
+                z = 0;
+            }
 
-            gyrocorrect();
+            if (gyro.getGyroAngleY() > 0.2) {
+               //  x = -0.2;
+            } else if (gyro.getGyroAngleY() < -0.2) {
+                // x = 0.2;
+            } else {
+                x = 0;
+            }
             drive.driveCartesian(x, y, z); // TODO: This is wrong
         } else if(System.currentTimeMillis() < end && automode == false) {
             System.out.print("a");
@@ -323,6 +336,7 @@ public class Robot extends TimedRobot {
         //temporary button
         if(xboxController.getBButton() && autoswitcher==false) {
             automode = !automode;
+            System.out.println(automode);
         }
     }
 
@@ -406,7 +420,7 @@ public class Robot extends TimedRobot {
         // Buffer the input
         ROTATE = bufferJoystickInput(rightJoystickX, 0.2);
 
-        var multiplier = (-(xboxController.getLeftTriggerAxis() * .4) + (xboxController.getRightTriggerAxis() * .5)
+        var multiplier = (-(xboxController.getLeftTriggerAxis() * .3) + (xboxController.getRightTriggerAxis() * .4)
                 + .5);// (-RightStick.getThrottle() * 0.5) + 0.5;
 
         FORWARD *= multiplier;
@@ -639,21 +653,20 @@ public class Robot extends TimedRobot {
     }
     public void gyrocorrect() {
         //please correct thineself sir!
-
-        
+            double setpoint = 7.0;
             System.out.println(gyro.getGyroAngleX());
-            if (gyro.getGyroAngleX() > 0.1) {
-                // z = .1;
+            if (gyro.getGyroAngleX() > 0.2+setpoint) {
+                 z = .1;
             } else if (gyro.getGyroAngleX() < -0.1) {
-                // z = -0.1;
+                 z = -0.1;
             } else {
                 z = 0;
             }
 
-            if (gyro.getGyroAngleY() > 0.2) {
-                // x = -0.1;
+            if (gyro.getGyroAngleY() > 0.2+setpoint) {
+                 x = -0.1;
             } else if (gyro.getGyroAngleY() < -0.2) {
-                // x = 0.1;
+                 x = 0.1;
             } else {
                 x = 0;
             }
