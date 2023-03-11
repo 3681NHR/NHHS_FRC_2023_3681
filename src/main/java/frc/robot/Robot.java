@@ -188,35 +188,35 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
         rotatingArmEncoder.setDistancePerPulse((Math.PI * 6) / 360.0);
 
-        LiftAxisEncoder.setPosition(0);
+        // LiftAxisEncoder.setPosition(0);
 
         rotatingArmEncoder.reset(); // GRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH
     }
 
-    private void initializeLastDitchEncoderAnalogPID() {
-        // PID coefficients
-        // for future lookers, we never used this.
-        LiftAxisPID = LiftAxisController.getPIDController();
+    // private void initializeLastDitchEncoderAnalogPID() {
+    //     // PID coefficients
+    //     // for future lookers, we never used this.
+    //     LiftAxisPID = LiftAxisController.getPIDController();
 
-        // set PID coefficients
-        LiftAxisPID.setP(kP);
-        LiftAxisPID.setI(kI);
-        LiftAxisPID.setD(kD);
-        LiftAxisPID.setIZone(kIz);
-        LiftAxisPID.setFF(kFF);
-        LiftAxisPID.setOutputRange(kMinOutput, kMaxOutput);
+    //     // set PID coefficients
+    //     LiftAxisPID.setP(kP);
+    //     LiftAxisPID.setI(kI);
+    //     LiftAxisPID.setD(kD);
+    //     LiftAxisPID.setIZone(kIz);
+    //     LiftAxisPID.setFF(kFF);
+    //     LiftAxisPID.setOutputRange(kMinOutput, kMaxOutput);
 
-        // display PID coefficients on SmartDashboard
-        SmartDashboard.putNumber("P Gain", kP);
-        SmartDashboard.putNumber("I Gain", kI);
-        SmartDashboard.putNumber("D Gain", kD);
-        SmartDashboard.putNumber("I Zone", kIz);
-        SmartDashboard.putNumber("Feed Forward", kFF);
-        SmartDashboard.putNumber("Max Output", kMaxOutput);
-        SmartDashboard.putNumber("Min Output", kMinOutput);
-        SmartDashboard.putNumber("Set Rotations", 0);
+    //     // display PID coefficients on SmartDashboard
+    //     SmartDashboard.putNumber("P Gain", kP);
+    //     SmartDashboard.putNumber("I Gain", kI);
+    //     SmartDashboard.putNumber("D Gain", kD);
+    //     SmartDashboard.putNumber("I Zone", kIz);
+    //     SmartDashboard.putNumber("Feed Forward", kFF);
+    //     SmartDashboard.putNumber("Max Output", kMaxOutput);
+    //     SmartDashboard.putNumber("Min Output", kMinOutput);
+    //     SmartDashboard.putNumber("Set Rotations", 0);
 
-    }
+    // }
 
     @Override
     public void autonomousInit() {
@@ -344,7 +344,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
         initializeRotatingArmEncoder();
 
-        initializeLastDitchEncoderAnalogPID();
+        //initializeLastDitchEncoderAnalogPID();
 
         // Set setpoint to current heading at start of auto
         heading = gyro.getAngle();
@@ -470,7 +470,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
         SmartDashboard.putNumber("testnumber2", test++);
         SmartDashboard.putNumber("Rotating Arm Encoder", rotatingArmEncoder.getDistance());
 
-        LiftAxisController.set(((xboxController2.getLeftTriggerAxis() - xboxController2.getRightTriggerAxis()) * .2));
+        // LiftAxisController.set(((xboxController2.getLeftTriggerAxis() - xboxController2.getRightTriggerAxis()) * .2));
         double c = 0; // shrimple and inefficient
         double d = 0;
         // if I give it some more voltage hrmrmm I can make it hold up but it will start
@@ -555,6 +555,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
         // SmartDashboard.putBoolean("limitSwitch", testLimitSwitch.get());
     }
 
+    /*
     private void LastDitchAnalogControl(double position) { // it holds its own arm fine anyways, honestly wouldnt help
                                                            // us now
         // Read
@@ -579,7 +580,9 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
         }
     }
+    */
 
+    /*
     public void AnalogSpeed(double rate) {
         final double feedForward = LiftAxisPID.getFF();
         rotations = rate;
@@ -592,6 +595,9 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
     }
 
+    */
+
+    /*
     public void AnalogPID() {
         // read PID coefficients from SmartDashboard
         double p = SmartDashboard.getNumber("P Gain", 0);
@@ -634,6 +640,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
         SmartDashboard.putNumber("Output", LiftAxisController.getAppliedOutput());
 
     }
+    */
 
     // above is last case scenario (not)
     // everything below is for the encoder that doesnt work. Please be advised, I
