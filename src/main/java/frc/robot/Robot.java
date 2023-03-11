@@ -69,8 +69,8 @@ public class Robot extends TimedRobot {
     private static final int BACK_RIGHT_WHEEL_CAN_ID = 4;
 
     private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6;
-    private static final int ROTATING_ARM_ENCODER_PIN_A = 2; // TODO: Set this properly once it's plugged in
-    private static final int ROTATING_ARM_ENCODER_PIN_B = 3; // currently set up to be the gripper carriage encoder
+    private static final int ROTATING_ARM_ENCODER_PIN_A = 1; // TODO: Set this properly once it's plugged in
+    private static final int ROTATING_ARM_ENCODER_PIN_B = 0; // currently set up to be the gripper carriage encoder
                                                              // still doesnt work \o/
 
     private static final int GRIPPER_CARRIAGE_CONTROLLER_CAN_ID = 9;
