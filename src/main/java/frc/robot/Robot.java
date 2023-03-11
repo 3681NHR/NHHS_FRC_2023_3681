@@ -106,18 +106,17 @@ public class Robot extends TimedRobot {
             ROTATING_ARM_ENCODER_PIN_B,
             false,
             Encoder.EncodingType.k2X);
-    // MotorController rotatingArmController = new
-    // SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID); //cant have two motor
+    MotorController rotatingArmController = new SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID); //cant have two motor
     // controller things on. Switch this back to RO...etc when the encoder magically
     // works
-    CANSparkMax LiftAxisController;
+    // CANSparkMax LiftAxisController;
 
     private Encoder gripperCarriageEncoder;
     private CANSparkMax gripperCarriageController = new CANSparkMax(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID,
             MotorType.kBrushed);
 
-    private RelativeEncoder LiftAxisEncoder;
-    private SparkMaxPIDController LiftAxisPID;
+    // private RelativeEncoder LiftAxisEncoder;
+    // private SparkMaxPIDController LiftAxisPID;
 
     int a = 0;
     DoubleSolenoid Stage1Helper;
@@ -295,8 +294,8 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
         sim = 0;
 
         // Worst case scenario setup for the NEO brushless encoder.
-        LiftAxisController = new CANSparkMax(ROTATING_ARM_CONTROLLER_CAN_ID, MotorType.kBrushless);
-        LiftAxisEncoder = LiftAxisController.getEncoder();
+      //  LiftAxisController = new CANSparkMax(ROTATING_ARM_CONTROLLER_CAN_ID, MotorType.kBrushless);
+      //  LiftAxisEncoder = LiftAxisController.getEncoder();
 
         // rotatingArmController.set(0.0);
 
@@ -525,6 +524,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
             // LastDitchAnalogControl(pos1);
             // LiftAxisController.set(pos1);
+            rotateArmToPosition(pos1);
 
         } else {
             sim = 0.0;
@@ -532,6 +532,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
             // If X is not pressed, stop the arm from moving
             // LiftAxisEncoder.setPosition(0);
             // rotatingArmController.set(0.0);
+
         }
 
         /*
@@ -651,8 +652,8 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
 
         final double output = rotatingArmPIDController.calculate(rotatingArmEncoder.getRate(),
                 rotatingArmSpeedMetersPerSecond);
-        // rotatingArmController.setVoltage(output + feedForward);
-
+        rotatingArmController.setVoltage(output + feedForward);
+        
     }
 
     private void rotateArmToPosition(double distance) {
@@ -661,6 +662,7 @@ MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
         // Stage1Helper.set(kOff);
         double buffer = .1;
         double multipler1 = -0.01;
+
         if ((rotatingArmEncoder.getDistance() <= distance - buffer
                 || rotatingArmEncoder.getDistance() >= distance + buffer) && sim == 1.0) {
             double differencer = rotatingArmEncoder.getDistance() - distance;
