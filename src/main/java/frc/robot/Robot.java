@@ -42,7 +42,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 import edu.wpi.first.math.kinematics.MecanumDriveOdometry;
 import edu.wpi.first.math.geometry.Translation2d;
-import com.pathplanner.lib.PathPlanner;
+//import com.pathplanner.lib.PathPlanner;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -83,6 +83,8 @@ public class Robot extends TimedRobot {
     boolean autoswitcher = false; //for switching auto modes before auto
     boolean automode;   //actual switch variable
     ADIS16448_IMU gyro = new ADIS16448_IMU();
+
+    Gyro aGyro = (Gyro)(gyro);
     // MotorController frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID);
     // MotorController backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID);
     // MotorController frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID);
@@ -165,19 +167,19 @@ Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
 MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
   m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation
 );
-
+//Rotation2d m_gyro = new  
 // Creating my odometry object from the kinematics object and the initial wheel positions.
 // Here, our starting pose is 5 meters along the long end of the field and in the
 // center of the field along the short end, facing the opposing alliance wall.
-//  MecanumDriveOdometry m_odometry = new MecanumDriveOdometry(
-//    m_kinematics,
-//    gyro.getYawAxis(),
-//    new MecanumDriveWheelPositions(
-//      frontLeftEnc.getPosition(), frontRightEnc.getPosition(),
-//      backLeftEnc.getPosition(), backRightEnc.getPosition()
-//    ),
-//    new Pose2d(5.0, 13.5, new Rotation2d())
-//  );
+  MecanumDriveOdometry m_odometry = new MecanumDriveOdometry(
+    m_kinematics,
+    aGyro.getRotation2d(),
+    new MecanumDriveWheelPositions(
+      frontLeftEnc.getPosition(), frontRightEnc.getPosition(),
+      backLeftEnc.getPosition(), backRightEnc.getPosition()
+    ),
+    new Pose2d(5.0, 13.5, new Rotation2d())
+  );
 
     // private DigitalInput testLimitSwitch = new DigitalInput(0);
 
