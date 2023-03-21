@@ -16,10 +16,13 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
 //import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 //import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.motorcontrol.Victor;
 //import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import lib.drive;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 
@@ -39,7 +42,6 @@ import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
 import com.revrobotics.RelativeEncoder;
 //import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.CANSparkMax;
 import edu.wpi.first.math.kinematics.MecanumDriveOdometry;
 import edu.wpi.first.math.geometry.Translation2d;
 //import com.pathplanner.lib.PathPlanner;
@@ -48,8 +50,23 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
 import edu.wpi.first.wpilibj.CounterBase;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPlanner;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.pathplanner.lib.PathConstraints;
+import com.pathplanner.lib.auto.PIDConstants;
+import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
+import com.pathplanner.lib.PathPoint;
 
-//liveshare link
+import motor.SparkWrapper;
+import motor.VictorWrapper;
+import motor.motorinterface;
+import lib.drive;
+
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
+//liveshare link*
 /**
  * 
  * I blame neil for this existing. - DJ
@@ -62,7 +79,7 @@ public class Robot extends TimedRobot {
     private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2;
     private static final int BACK_RIGHT_WHEEL_CAN_ID = 4;
 
-    private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6; // still doesnt work \o/
+    private static final int ROTATING_ARM_CONTROLLER_CAN_ID = 6; // still doesnt work \o/ (it works) 3 weeks later
     private static final int ROTATING_ARM_ENCODER_PIN_A = 3; // TODO: Set this properly once it's plugged in
     private static final int ROTATING_ARM_ENCODER_PIN_B = 4; // currently set up to be the gripper carriage encoder
 
@@ -70,11 +87,12 @@ public class Robot extends TimedRobot {
     private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 1; //tbd
     private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 0; //tbd
     /* Little explanation:
-     * CANSparkMax is a class dedicated to specifically the Rev Robotics Sparkmax motor controller
+     * SparkWrapper is a class dedicated to specifically the Rev Robotics Sparkmax motor controller
      * Below we are defining the objects frontLeft etc. to their CAN ID (checked using the rev robotics hardware client)
      * and Motor Type (brushless or brushed usually)
-     * Then with the Mecanum Drive class we plug in our CANSparkMax objects to initialize our object "drive".
-     * This is opposed to the motorcontroller class we have, which is what we used last year and is combined with SparkWrapper. Didn't make it, blame neil.
+     * Then with the Mecanum Drive class we plug in our SparkWrapper objects to initialize our object "drive".
+     * 
+     * Edit: Use the wrappers instead. Sparkwrapper and Victorwrapper with the motorinterface interface.
      * 
      * The Relative Encoder class is a Rev Robotics specific encoder class used for the integrated encoders on the NEO brushless motors. (Behaves similarly but with less setup)
      * The Encoder class is usually used for non-integrated encoders like our AMT103 Quadrature Encoder (which was a pain to deal with for weeks and weeks and weeks SCREAMING)
@@ -93,23 +111,30 @@ public class Robot extends TimedRobot {
      * (!) CHECK CONTINUITY FOR WIRES. IT ISNT ALWAYS YOUR FAULT!!
      *     - If not continuity, use an oscilloscope to test for data for sensors
      * The MXI port(the middle one) on the roborio is used for gyros and the like and it plugs in to all the pins.
+     * (?) If someone who is better than me (likely) comes around these later years, check out other teams code.
+     *      - This code isn't very good. Many other teams have had years of foundation building on their code. As of 2023, I'd like future team members
+     *      - to do similar. Please post everything you do in github, and maybe when I come back in 5 years, everything will be awesome.
+     *      - Check out other teams code on github, especially team 2910 for command-based programming and team 254 for timed-based similar to ours.
+     *          - edit: I have learned so much after looking at other code. My horizons are broadened.
+     * 
     */
-    CANSparkMax frontLeft = new CANSparkMax(FRONT_LEFT_WHEEL_CAN_ID, MotorType.kBrushless);
-    CANSparkMax backLeft = new CANSparkMax(BACK_LEFT_WHEEL_CAN_ID, MotorType.kBrushless);
-    CANSparkMax frontRight = new CANSparkMax(FRONT_RIGHT_WHEEL_CAN_ID, MotorType.kBrushless);
-    CANSparkMax backRight = new CANSparkMax(BACK_RIGHT_WHEEL_CAN_ID, MotorType.kBrushless);
-    CANSparkMax gripperCarriageController = new CANSparkMax(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID,
-            MotorType.kBrushed);
-    CANSparkMax LiftAxisController = new CANSparkMax(ROTATING_ARM_CONTROLLER_CAN_ID, MotorType.kBrushless);
-    MecanumDrive drive = new MecanumDrive(frontLeft, backLeft, frontRight, backRight);
-    MotorControllerGroup leftMotors = new MotorControllerGroup(frontLeft, backLeft);
-    MotorControllerGroup rightMotors = new MotorControllerGroup(frontRight, backRight);
+    motorinterface frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "frontLeft");
+    motorinterface backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left");
+    motorinterface frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right");
+    motorinterface backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right");
+    motorinterface gripperCarriageController = new SparkWrapper(GRIPPER_CARRIAGE_CONTROLLER_CAN_ID,
+            "Gripper Carriage");
+    motorinterface LiftAxisController = new SparkWrapper(ROTATING_ARM_CONTROLLER_CAN_ID, "Rotating Arm");
+    motorinterface spinner = new VictorWrapper(5, "spinna real");
+    motorinterface spinner2 = new VictorWrapper(6, "real shit"); //I understand everything now 3/21/23
+
+    drive drive = new drive(frontLeft, backLeft, frontRight, LiftAxisController);
     //private SparkMaxPIDController LiftAxisPID;
     //private RelativeEncoder LiftAxisEncoder;
-    private RelativeEncoder frontLeftEnc = frontLeft.getEncoder();
-    private RelativeEncoder backLeftEnc = backLeft.getEncoder();
-    private RelativeEncoder frontRightEnc = frontRight.getEncoder();
-    private RelativeEncoder backRightEnc = backRight.getEncoder();
+    // private RelativeEncoder frontLeftEnc = frontLeft.getEncoder();
+    // private RelativeEncoder backLeftEnc = backLeft.getEncoder();   //we dont need this anymore
+    // private RelativeEncoder frontRightEnc = frontRight.getEncoder();
+    // private RelativeEncoder backRightEnc = backRight.getEncoder();
     private Encoder rotatingArmEncoder = new Encoder(ROTATING_ARM_ENCODER_PIN_A,
             ROTATING_ARM_ENCODER_PIN_B,
             false,
@@ -138,7 +163,6 @@ public class Robot extends TimedRobot {
     boolean autoswitcher = false; //for switching auto modes before auto
     boolean automode;   //actual switch variable
     double pos1;
-    double sim;
     double rotations;
     double hardcodeddistance;
     // variables for auto
@@ -146,14 +170,25 @@ public class Robot extends TimedRobot {
     double y = 0; // TODO: Figure this from kp * error
     double z = 0; // TODO: Figure this form kp * error
     // The heading of the robot when starting the motion
+    double actionprocess = 0;
     double heading;
     double gyro_error = 0;
     long t = System.currentTimeMillis();
     long end;
+    double fin = 0;
+
     private final Lock dataLock = new ReentrantLock();
     // TODO: Update gain vals in the feed forward
     private final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(1, 3);
-    private final PIDController rotatingArmPIDController = new PIDController(1, 1, 0);
+    private final PIDController rotatingArmPIDController = new PIDController(.1, 1, 0);
+
+    private static volatile boolean wPressed = false;
+    public static boolean isWPressed() {
+        synchronized (Robot.class) {
+            return wPressed;
+        }
+    }
+
 
     @Override
     public void robotInit() {
@@ -176,9 +211,8 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         putDashboard();
-        if(xboxController.getBButton() && autoswitcher==false) {
+        if(Robot.isWPressed()) {
             automode = !automode;
-            System.out.println(automode);
         }
     }
 
@@ -186,8 +220,6 @@ public class Robot extends TimedRobot {
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
-        pos1=0;
-        sim=0;
     }
 
     @Override
@@ -211,21 +243,30 @@ public class Robot extends TimedRobot {
         
         hardcodeddistance = 0;
         autoswitcher = true;
+
+        PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
+        PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
+
+        // Print the velocity at the sampled time
+        System.out.println(exampleState.velocityMetersPerSecond);
+
+        //for impromptu, theoretically use this with the funny computere vision
+        PathPlannerTrajectory traj1 = PathPlanner.generatePath(
+            new PathConstraints(4, 3), 
+            new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
+            new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
+                
+        );
     }
-    
+
     @Override
     public void autonomousPeriodic() {
         // TODO here:
         // Calculate desired heading from the vision module
         heading = 0;
         gyro_error = heading - gyro.getAngle();
-        if (System.currentTimeMillis() < end && automode == true) {
-            gyrocorrect();
-            //double setpoint = -180.0;
-            System.out.println(gyro.getGyroAngleX());
-            drive.driveCartesian(x, y, z); // TODO: This is wrong
-        } else if(System.currentTimeMillis() < end && automode == false) {
-            System.out.print("a");
+        if (System.currentTimeMillis() < end) {
+            autonomousMode(automode);
         } else {
             drive.driveCartesian(0, 0, 0);
         }
@@ -260,12 +301,10 @@ public class Robot extends TimedRobot {
     private void rotateArmToPosition(double SET) {
         // Read 
         // Turn rotatingArm motor controller on yuh
-        if (rotatingArmEncoder.getDistance() < SET) {
-            setRotatingArmSpeed(0.2); // TODO: Make this speed a bit smarter
         Stage1Helper.set(kOff);
         double buffer = .1;
         double multipler1 = -0.01;
-        if ((rotatingArmEncoder.getDistance() <= SET-buffer || rotatingArmEncoder.getDistance() >= SET+buffer) && sim == 1.0) {
+        if ((rotatingArmEncoder.getDistance() <= SET-buffer || rotatingArmEncoder.getDistance() >= SET+buffer)) {
             double differencer = rotatingArmEncoder.getDistance() - SET;
             // god forbid this is wrong - if differencer is negative then it goes down right????
             // and positive means up??? !
@@ -278,7 +317,6 @@ public class Robot extends TimedRobot {
                 Stage1Helper.set(kForward);
             } else if(speedcalc == -1) {
                 Stage1Helper.set(kReverse);
-            }
             }
         }
     }
@@ -317,7 +355,6 @@ public class Robot extends TimedRobot {
         double rightJoystickX = xboxController.getRightX();
         double c = 0; // shrimple and inefficient
         double d = 0;
-        double fin = 0;
         var STRAFE = 0.0;
         var FORWARD = 0.0;
         var ROTATE = 0.0;
@@ -327,21 +364,17 @@ public class Robot extends TimedRobot {
         FORWARD = bufferJoystickInput(-leftJoystickY*multiplier, 0.2); // Joystick direction is opposite
         ROTATE = bufferJoystickInput(rightJoystickX*multiplier, 0.2); // Buffer the input
         drive.driveCartesian(FORWARD, -STRAFE, ROTATE); //THIS IS THAT GUY!!!
-        //LiftAxisController.set(((xboxController2.getLeftTriggerAxis() - xboxController2.getRightTriggerAxis()) * .2));
-        rotateArmToPosition(fin);
+        LiftAxisController.set(ControlMode.PercentOutput,((xboxController2.getLeftTriggerAxis() - xboxController2.getRightTriggerAxis()) * .2));
         if (xboxController2.getLeftBumper()) {
-            gripperCarriageController.set(1.0);
-            // System.out.println("carriage.");
             c = 1; // if I give it some more voltage hrmrmm I can make it hold up but it will start
-        } else if (xboxController2.getRightBumper()) {
-            gripperCarriageController.set(-1.0);
+        } if (xboxController2.getRightBumper()) {
             d = -1.0;
         } else {
-            gripperCarriageController.set(0);
+            gripperCarriageController.set(ControlMode.PercentOutput, 0);
             c = 0;
             d = 0;
         }
-        gripperCarriageController.set(.05 + c + d);
+        gripperCarriageController.set(ControlMode.PercentOutput,.05 + c+d);
         // theoretically this would let it fight gravity while responding to my
         // controls. Not tuned yet.
         // EDIT: 3 weeks later, its tuned.
@@ -352,13 +385,12 @@ public class Robot extends TimedRobot {
             Stage1Helper.toggle();  //toggle pneumatics
         }
         if (xboxController2.getXButton()) {
-            sim = 1.0;
-        } else {
-            sim = 0.0;
-            // If X is not pressed, stop the arm from moving
+            fin = 0;
+        }
+        if (xboxController2.getBButton()) {
+            fin = -1;
         }
         if (xboxController.getBButtonPressed()) {
-            pos1 = 0;   //reset
             breakpiston.toggle(); //break yuh
         }
         // System.out.println(rotatingArmEncoder.getDistance()+" arm rotation angle
@@ -372,7 +404,22 @@ public class Robot extends TimedRobot {
         // boolean button6_pressed = buttonPanel.getRawButtonPressed(6);
         // boolean button9_pressed = buttonPanel.getRawButtonPressed(9);
         // boolean switch_flicked = buttonPanel.getRawButtonPressed(10);
+
+        action(); // showtime!!
     }
+
+    public void action(){
+
+        if (actionprocess <= .2) {
+        }
+        rotateArmToPosition(fin); // rotate arm function, input desired distance
+    }
+
+    public void autonomousMode(boolean true_or_false){
+        drive.driveCartesian(0, 0, 0);
+
+    }
+
     public void visionthread(){
         RRvisionThread = new Thread(
                 () -> {
@@ -409,18 +456,8 @@ public class Robot extends TimedRobot {
         RRvisionThread.setDaemon(true); // haha daemon!
         RRvisionThread.start();
     }
-    public double integralfunction(double accel) {
-        // yuh angus hours
-        double positionoffset;
-        long time = System.currentTimeMillis();
-
-        positionoffset = ((1 / 2) * accel * time * time); // theoretically how physics work
-
-        return (positionoffset);
-    }
-    public void gyrocorrect() {
+    public void gyrocorrect(double setpoint) {
         //please correct thineself sir!
-        double setpoint = 7.0;
         System.out.println(gyro.getGyroAngleX());
             if (gyro.getGyroAngleX() > 0.2+setpoint) {
                  z = .1;
@@ -459,10 +496,35 @@ public class Robot extends TimedRobot {
         m_kinematics,
         aGyro.getRotation2d(),
         new MecanumDriveWheelPositions(
-        frontLeftEnc.getPosition(), frontRightEnc.getPosition(),
-        backLeftEnc.getPosition(), backRightEnc.getPosition()
+        frontLeft.getSelectedSensorPosition(0), frontRight.getSelectedSensorPosition(0),
+        backLeft.getSelectedSensorPosition(0), backRight.getSelectedSensorPosition(0)
         ),
         new Pose2d(5.0, 13.5, new Rotation2d())
     );
+
+    public static void main(String[] args) {
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent ke) {
+                synchronized (Robot.class) {
+                    switch (ke.getID()) {
+                    case KeyEvent.KEY_PRESSED:
+                        if (ke.getKeyCode() == KeyEvent.VK_W) {
+                            wPressed = true;
+                        }
+                        break;
+
+                    case KeyEvent.KEY_RELEASED:
+                        if (ke.getKeyCode() == KeyEvent.VK_W) {
+                            wPressed = false;
+                        }
+                        break;
+                    }
+                    return false;
+                }
+            }
+        });
+    }
     
 }
