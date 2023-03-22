@@ -163,12 +163,12 @@ public class Robot extends TimedRobot {
     double gyro_error = 0;
     long t = System.currentTimeMillis();
     long end;
-    double fin = -45;
+    double fin = -70;
 
     private final Lock dataLock = new ReentrantLock();
     // TODO: Update gain vals in the feed forward
     private final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
-    private final PIDController rotatingArmPIDController = new PIDController(1.0565, 0, 0.23897);
+    private final PIDController rotatingArmPIDController = new PIDController(1.0565, 0, .13);
 
     private static volatile boolean wPressed = false;
     public static boolean isWPressed() {
@@ -233,8 +233,8 @@ public class Robot extends TimedRobot {
         PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
 
         // Print the velocity at the sampled time
-        //System.out.println(exampleState.velocityMetersPerSecond);
 
+        
         //for impromptu, theoretically use this with the funny computere vision
         PathPlannerTrajectory traj1 = PathPlanner.generatePath(
             new PathConstraints(4, 3), 
@@ -287,8 +287,8 @@ public class Robot extends TimedRobot {
         // Read 
         // Turn rotatingArm motor controller on yuh
         Stage1Helper.set(kOff);
-        double buffer = .0000001;
-        double multipler1 = -.5;
+        double buffer = 0;
+        double multipler1 = -1;
         //LiftAxisController.set(ControlMode.Position, SET);
          if ((rotatingArmEncoder.getDistance() <= SET-buffer || rotatingArmEncoder.getDistance() >= SET+buffer)) {
              double differencer = rotatingArmEncoder.getDistance() - SET;
@@ -296,8 +296,7 @@ public class Robot extends TimedRobot {
              // and positive means up??? !
              double speedcalc = ((differencer)/(Math.abs(differencer)));
              // actual distance = .1, distance = .45 then .1 - .45 is negative then you have to go
-            System.out.println(differencer);
-             setRotatingArmSpeed(speedcalc*multipler1); // TODO: Make this speed a bit smarter
+             setRotatingArmSpeed(speedcalc*multipler1, SET); // TODO: Make this speed a bit smarter
              if (speedcalc == 1){
                //  Stage1Helper.set(kForward);
              } else if(speedcalc == -1) {
@@ -306,13 +305,14 @@ public class Robot extends TimedRobot {
          }
     }
 
-    public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond) {
+    public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond, double setpoint) {
          final double feedForward = rotatingArmFeedForward.calculate(rotatingArmSpeedMetersPerSecond);
-        System.out.println(rotatingArmSpeedMetersPerSecond);
         double output =
-             rotatingArmPIDController.calculate(-(rotatingArmEncoder.getRate()), -45);
+             rotatingArmPIDController.calculate((rotatingArmEncoder.getDistance()), setpoint);
         //  LiftAxisController.setVoltage(output + feedForward); 
-        LiftAxisController.set(ControlMode.PercentOutput, output*.1+feedForward*.1);
+        System.out.println(feedForward+output + "PID !!!!");
+
+        LiftAxisController.set(ControlMode.PercentOutput, (output*.1+feedForward*.1)/10);
       }
 
     public void initSolenoid(int fc1, int rc1, int fc2, int rc2){
@@ -380,7 +380,6 @@ public class Robot extends TimedRobot {
         if (xboxController.getBButtonPressed()) {
             breakpiston.toggle(); //break yuh
         }
-        // System.out.println(rotatingArmEncoder.getDistance()+" arm rotation angle
         // position ---------");
         // int panelJoystickAngle = buttonPanel.getPOV();
         // boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
@@ -445,7 +444,6 @@ public class Robot extends TimedRobot {
     }
     public void gyrocorrect(double setpoint) {
         //please correct thineself sir!
-        //System.out.println(gyro.getGyroAngleX());
             if (gyro.getGyroAngleX() > 0.2+setpoint) {
                  z = .1;
             } else if (gyro.getGyroAngleX() < -0.1) {
