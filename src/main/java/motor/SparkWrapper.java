@@ -13,6 +13,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.jni.CANSparkMaxJNI;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @see CANSparkMax
  */
 public class SparkWrapper implements motorinterface {
+    protected final long sparkMaxHandle;
 
     private CANSparkMax motor;
     private SparkMaxPIDController pidController;
@@ -46,6 +48,7 @@ public class SparkWrapper implements motorinterface {
     
     public SparkWrapper(int deviceNumber, String motorName) {
         motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
+        sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(deviceNumber, 1);
         pidController = motor.getPIDController();
         encoder = motor.getEncoder();
         name = motorName;
@@ -732,11 +735,24 @@ public class SparkWrapper implements motorinterface {
         throwIfClosed();
         // Only for 'get' API
         m_setpoint = speed;
-        setpointCommand(speed, ControlType.kDutyCycle);
+        setpointCommand(speed, ControlType.kDutyCycle, 1, 0 ,0);
     }
 
-    REVLibError setpointCommand(double value, ControlType controlType) {
-        throwIfClosed();
-        return setpointCommand(value, ControlType.kDutyCycle);
-    }
+    REVLibError setpointCommand(
+      double value,
+      CANSparkMax.ControlType ctrl,
+      int pidSlot,
+      double arbFeedforward,
+      int arbFFUnits) {
+    throwIfClosed();
+    return REVLibError.fromInt(
+        CANSparkMaxJNI.c_SparkMax_SetpointCommand(
+            sparkMaxHandle,
+            (float) value,
+            ctrl.value,
+            pidSlot,
+            (float) arbFeedforward,
+            arbFFUnits));
+  }
+    
 }

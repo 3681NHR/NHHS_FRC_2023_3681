@@ -174,10 +174,10 @@ public class drive extends RobotDriveBase implements Sendable, AutoCloseable {
 
     var speeds = driveCartesianIK(xSpeed, ySpeed, zRotation, gyroAngle);
 
-    m_frontLeftMotor.set(ControlMode.Current, speeds.frontLeft * m_maxOutput);
-    m_frontRightMotor.set(ControlMode.Current, speeds.frontRight * m_maxOutput);
-    m_rearLeftMotor.set(ControlMode.Current, speeds.rearLeft * m_maxOutput);
-    m_rearRightMotor.set(ControlMode.Current, speeds.rearRight * m_maxOutput);
+    m_frontLeftMotor.set2(speeds.frontLeft * m_maxOutput);
+    m_frontRightMotor.set2(speeds.frontRight * m_maxOutput);
+    m_rearLeftMotor.set2(speeds.rearLeft * m_maxOutput);
+    m_rearRightMotor.set2(speeds.rearRight * m_maxOutput *-1); //TODO: a little trolling
 
     feed();
   }
