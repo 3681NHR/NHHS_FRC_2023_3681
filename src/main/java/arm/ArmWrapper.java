@@ -78,7 +78,15 @@ public class ArmWrapper {
 
         return (output * 0.1 + feedForward * 0.1) / 10;
     }
+    /**
+     * Only reason for this to exist is to satiate my needs to differentiate it from the analog control
+     * @param setpoint desired angle
+     */
+    public void PIDControlArm(double setpoint){
+        MotorArm.set(ControlMode.PercentOutput, getPIDout(setpoint));
+        SmartDashboard.putNumber("Chosen Setpoint", setpoint);
 
+    }
     /**
      * 0
      * 
@@ -107,7 +115,10 @@ public class ArmWrapper {
         EncoderArm.reset();
         EncoderCarriage.reset();
     }
-
+    /**
+     * Drops ArmWrapper data onto the Smart Dashboard
+     * @see SmartDashboard
+     */
     public void putDashboard() {
         SmartDashboard.putNumber("EncoderArm", getAngleArm());
         SmartDashboard.putNumber("EncoderCarriage", getAngleCarriage());

@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.ADIS16448_IMU;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -36,6 +37,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import arm.ArmController;
+import arm.ArmWrapper;
 
 /**
  * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
@@ -107,6 +109,9 @@ public class Robot extends TimedRobot {
     private static final int BACK_LEFT_WHEEL_CAN_ID = 1;
     private static final int FRONT_RIGHT_WHEEL_CAN_ID = 2;
     private static final int BACK_RIGHT_WHEEL_CAN_ID = 4;
+
+    private static final int SPINNER_A = 16;
+    private static final int SPINNER_B = 17;
     
     private static final int ARM_CONTROLLER_CAN_ID = 6;
     private static final int ARM_ENCODER_PIN_A = 0;
@@ -116,13 +121,12 @@ public class Robot extends TimedRobot {
     private static final int CARRIAGE_ENCODER_PIN_A = 2;
     private static final int CARRIAGE_ENCODER_PIN_B = 3;
 
-    private static final int SPINNER_A = 16;
-    private static final int SPINNER_B = 17;
-
     private static final int CONTROLLER_USB_PORT_A = 0;
     private static final int CONTROLLER_USB_PORT_B = 1;
 
     private static final int BUTTON_PANEL_USB_PORT = 4;
+
+    private static final int LIMIT_SWITCH_PORT = 4;
 
     // NOTE: Regular constants
     private static final double INPUT_BUFFER_AMOUNT = 0.2;
@@ -152,9 +156,13 @@ public class Robot extends TimedRobot {
     DoubleSolenoid armPistonSolenoid;
     DoubleSolenoid handPistonSolenoid;
     Solenoid brakePistonSolenoid;
+
+    //NOTE: Misc Digital Input
+    DigitalInput LS = new DigitalInput(LIMIT_SWITCH_PORT);
     
     // NOTE: Drives / Actors
-    ArmController armController = new ArmController(armEncoder, carriageEncoder, armMotor, carriageMotor, null);
+    ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor);
+    ArmController armController = new ArmController(MainArm, null);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
@@ -200,6 +208,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         putDashboard();
+        if (LS.get()) {MainArm.calibrate();}
     }
 
     @Override
@@ -222,17 +231,6 @@ public class Robot extends TimedRobot {
         end = System.currentTimeMillis() + 30000;
 
         hardcodeddistance = 0;
-
-        PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
-        PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
-
-        // NOTE: Print the velocity at the sampled time for impromptu, theoretically use
-        // this with the funny computere vision
-        PathPlannerTrajectory traj1 = PathPlanner.generatePath(
-                new PathConstraints(4, 3),
-                new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
-                new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
-        );
     }
 
     @Override
@@ -242,15 +240,14 @@ public class Robot extends TimedRobot {
         drive.driveCartesian(0, 0, 0);
     }
 
-    // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC
-    // STUFF)================================================
+    // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC STUFF)================================================
     public boolean emergencysend() {
         if (buttonPanel.getRawButton(1)) {
             return true;
         } else
             return false;
     }
-
+    
     private void putDashboard() {
         SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
         SmartDashboard.putNumber("Gyro Accel Y", gyro.getAccelY());
@@ -264,7 +261,7 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putNumber("Gyro Rate ", gyro.getRate());
 
-        // action.dashboardInfo();
+        MainArm.putDashboard();
     }
 
     public void initSolenoid(int fc1, int rc1, int fc2, int rc2) {
@@ -312,8 +309,9 @@ public class Robot extends TimedRobot {
             armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
         }
         if (controllerB.getXButton()) {
-            armController.setState(ArmController.ArmState.IDLE);
+            armController.setState(ArmController.ArmState.LOW);
         }
+
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
         }
@@ -377,4 +375,17 @@ public class Robot extends TimedRobot {
     // ),
     // new Pose2d(5.0, 13.5, new Rotation2d())
     // );
+
+    public void pathplanner() {
+        PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
+        PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
+
+        // NOTE: Print the velocity at the sampled time for impromptu, theoretically use
+        // this with the funny computere vision
+        PathPlannerTrajectory traj1 = PathPlanner.generatePath(
+                new PathConstraints(4, 3),
+                new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
+                new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
+        );
+    }
 }
