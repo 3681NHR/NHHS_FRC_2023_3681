@@ -11,7 +11,7 @@ import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.wpilibj.DriverStation;
-import lib.interfaces.motorinterface;
+import lib.interfaces.MotorInterface;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -21,10 +21,10 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
  * This class is a thin wrapper around the VictorSPX that reduces CAN bus / CPU overhead.
  * Connects with CTRE VictorSPX motor controllers and adapts it for the universal IGreenMotor.
  *
- * @see motorinterface
+ * @see MotorInterface
  * @see VictorSPX
  */
-public class VictorWrapper extends VictorSPX implements motorinterface {
+public class VictorWrapper extends VictorSPX implements MotorInterface {
     double m_setpoint = 0;
 
     protected String name = "";

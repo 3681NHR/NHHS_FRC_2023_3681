@@ -16,7 +16,7 @@ import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.jni.CANSparkMaxJNI;
 
-import lib.interfaces.motorinterface;
+import lib.interfaces.MotorInterface;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @param ControlMode
  * @param DeviceID (CAN)
  *
- * @see motorinterface
+ * @see MotorInterface
  * @see CANSparkMax
  * @see ControlMode 
  */
-public class SparkWrapper implements motorinterface {
+public class SparkWrapper implements MotorInterface {
     protected final long sparkMaxHandle;
 
     private CANSparkMax motor;
@@ -57,7 +57,7 @@ public class SparkWrapper implements motorinterface {
      * @param deviceNumber (CAN)
      * @param motorName
      * 
-     * @see motorinterface
+     * @see MotorInterface
      * @see CANSparkMax
      *
      */
@@ -714,7 +714,7 @@ public class SparkWrapper implements motorinterface {
         motor.follow(((SparkWrapper) masterToFollow).getMotor());
     }
 
-    public void follow(motorinterface masterToFollow, boolean inverted) {
+    public void follow(MotorInterface masterToFollow, boolean inverted) {
         motor.follow(((SparkWrapper) masterToFollow).getMotor(), inverted);
     }
 
