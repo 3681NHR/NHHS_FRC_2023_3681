@@ -13,6 +13,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.jni.CANSparkMaxJNI;
 
 import lib.interfaces.motorinterface;
@@ -62,6 +63,7 @@ public class SparkWrapper implements motorinterface {
      */
     public SparkWrapper(int deviceNumber, String motorName) {
         motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
+        motor.setIdleMode(IdleMode.kBrake);
         sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(deviceNumber, 1);
         pidController = motor.getPIDController();
         encoder = motor.getEncoder();

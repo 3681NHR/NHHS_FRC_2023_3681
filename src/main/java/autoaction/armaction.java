@@ -41,8 +41,8 @@ public class armaction implements act { //I love java so much
     private static final int ROTATING_ARM_ENCODER_PIN_B = 1; // currently set up to be the gripper carriage encoder
 
     private static final int GRIPPER_CARRIAGE_CONTROLLER_CAN_ID = 9;
-    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 2; //tbd
-    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 3; //tbd
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_A = 2; 
+    private static final int GRIPPER_CARRIAGE_ENCODER_PIN_B = 3; 
 
     private static final int XBOX_CONTROLLER_USB_PORT2 = 1; // a little uneccessary tho
 
@@ -114,8 +114,12 @@ public class armaction implements act { //I love java so much
         if (num+3000>=time){
           rotateArmToPosition(Lsetpoint(true));
         }
+
       } else {
-        // return to analog control
+        
+      }
+      if (finished()){
+      return;
       }
     }
 
@@ -141,20 +145,46 @@ public class armaction implements act { //I love java so much
   }
 
   public void rotateArmToPosition(double SET) {
-      // Read 
-      // Turn rotatingArm motor controller on yuh
       double multipler1 = -1;
-      //LiftAxisController.set(ControlMode.Position, SET);
       double differencer = rotatingArmEncoder.getDistance() - SET;
-      // god forbid this is wrong - if differencer is negative then it goes down right????
-      // and positive means up??? !
-      double speedcalc = ((differencer)/(Math.abs(differencer)));
-      // actual distance = .1, distance = .45 then .1 - .45 is negative then you have to go
-      setRotatingArmSpeed(speedcalc*multipler1, SET); // TODO: Make this speed a bit smarter
+
+      while (Math.abs(differencer) >= 3.1) {
+        differencer = rotatingArmEncoder.getDistance() - SET;
+
+        double speedcalc = ((differencer)/(Math.abs(differencer)));
+        setRotatingArmSpeed(speedcalc*multipler1, SET); // TODO: Make this speed a bit smarter
+      } 
+      LiftAxisController.set(ControlMode.PercentOutput, 0); 
   }
 
-  public void setRotatingArmSpeed(double rotatingArmSpeedMetersPerSecond, double setpoint) {
-      final double feedForward = rotatingArmFeedForward.calculate(rotatingArmSpeedMetersPerSecond);
+  // We'll use this in a little bit... 
+  private class RotateThread extends Thread {
+
+    private double finalPosition = 0; 
+
+    public RotateThread(double finalPosition) {
+      this.finalPosition = finalPosition; 
+    }
+
+    @Override
+    public void run() {
+        double multipler1 = -1;
+      //LiftAxisController.set(ControlMode.Position, SET);
+      double differencer = rotatingArmEncoder.getDistance() - finalPosition;
+
+      while (Math.abs(differencer) >= 3.1) {
+        differencer = rotatingArmEncoder.getDistance() - finalPosition;
+
+        double speedcalc = ((differencer)/(Math.abs(differencer)));
+        setRotatingArmSpeed(speedcalc*multipler1, finalPosition); // TODO: Make this speed a bit smarter
+      } 
+      LiftAxisController.set(ControlMode.PercentOutput, 0); 
+    }
+
+  }
+
+  public void setRotatingArmSpeed(double rotatingArmSpeed, double setpoint) {
+      final double feedForward = rotatingArmFeedForward.calculate(rotatingArmSpeed);
       double output =
            rotatingArmPIDController.calculate((rotatingArmEncoder.getDistance()), setpoint);
       System.out.println((output*.1+feedForward*.1)/10 + "PID !!!!");
@@ -166,7 +196,7 @@ public class armaction implements act { //I love java so much
     SmartDashboard.putNumber("Encoder Distance", rotatingArmEncoder.getDistance());
     SmartDashboard.putNumber("Encoder Rate", rotatingArmEncoder.getRate());
     SmartDashboard.putNumber("Encoder Raw", rotatingArmEncoder.getRaw());
-    SmartDashboard.putNumber("Carriage Encoder Distance", gripperCarriageEncoder.getDistance());
+    SmartDashboard.putNumber("Carriage Encoder Distance", gripperCarriageEncoder.get());
     SmartDashboard.putNumber("PID Value", output + feedForward);
 
   }

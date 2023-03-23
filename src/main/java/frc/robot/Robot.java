@@ -311,7 +311,7 @@ public class Robot extends TimedRobot {
         // EDIT: 3 weeks later, its tuned.
         action.analog();
 
-        if (xboxController2.getBButton()) {
+        if (xboxController2.getBButtonPressed()) {
             double timeinit = action.getTime();
             action.action(timeinit);
         }
