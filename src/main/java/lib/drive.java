@@ -18,7 +18,7 @@ import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.drive.RobotDriveBase;
-import motor.motorinterface;
+import lib.interfaces.motorinterface;
 
 /**
  * A class for driving Mecanum drive platforms.

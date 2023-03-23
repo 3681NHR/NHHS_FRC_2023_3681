@@ -1,4 +1,4 @@
-package motor;
+package lib.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.ParamEnum;
@@ -14,6 +14,9 @@ import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.jni.CANSparkMaxJNI;
+
+import lib.interfaces.motorinterface;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
@@ -21,11 +24,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- * Created by team 1861 and edited by me
+ *
  * A wrapper for the sparkmax
+ * @param ControlMode
+ * @param DeviceID (CAN)
  *
  * @see motorinterface
  * @see CANSparkMax
+ * @see ControlMode 
  */
 public class SparkWrapper implements motorinterface {
     protected final long sparkMaxHandle;
@@ -45,7 +51,15 @@ public class SparkWrapper implements motorinterface {
           throw new IllegalStateException("This SPARK MAX object has previously been closed.");
         }
       }
-    
+    /**
+     *
+     * @param deviceNumber (CAN)
+     * @param motorName
+     * 
+     * @see motorinterface
+     * @see CANSparkMax
+     *
+     */
     public SparkWrapper(int deviceNumber, String motorName) {
         motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
         sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(deviceNumber, 1);

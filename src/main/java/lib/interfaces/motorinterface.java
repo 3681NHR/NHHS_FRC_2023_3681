@@ -1,4 +1,4 @@
-package motor;
+package lib.interfaces;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.ControlMode;

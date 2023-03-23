@@ -1,4 +1,4 @@
-package motor;
+package lib.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
@@ -11,6 +11,8 @@ import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import lib.interfaces.motorinterface;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
