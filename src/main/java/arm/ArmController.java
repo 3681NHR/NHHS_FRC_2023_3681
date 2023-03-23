@@ -1,5 +1,6 @@
 package arm;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -42,7 +43,7 @@ public class ArmController {
 
     private ArmState currentStateId;
 
-    private static Map<ArmState, ArmAction> states;
+    private static Map<ArmState, ArmAction> states = new HashMap<>();
     
     public ArmController(Encoder armEncoder, Encoder carriageEncoder, MotorInterface armMotor, CANSparkMax carriageMotor, ArmState defaultState) {
         requireNonNullParam(armEncoder, "armEncoder", "ArmController");
