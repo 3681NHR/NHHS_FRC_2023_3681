@@ -121,10 +121,7 @@ public class armaction implements act { //I love java so much
 
     @Override 
     public boolean finished() {
-      if (process >= 1) {
-      return true;
-      } else
-      return false;
+      return rotatingArmEncoder.getStopped();
     }
 
     @Override 
