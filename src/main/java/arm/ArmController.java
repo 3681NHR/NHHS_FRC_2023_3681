@@ -1,6 +1,7 @@
 package arm;
 
 import java.util.HashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import edu.wpi.first.math.controller.PIDController;
