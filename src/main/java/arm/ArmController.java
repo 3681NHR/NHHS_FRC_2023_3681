@@ -1,13 +1,16 @@
 package arm;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import static edu.wpi.first.util.ErrorMessages.requireNonNullParam;
 
 public class ArmController {
+
     public enum ArmState {
         IDLE (0),
         HOME (1),
@@ -15,8 +18,11 @@ public class ArmController {
         MEDIUM(3),
         HIGH(4),
         SWEEPSTART(5),
-        SWEEPMIDDLE(6),
-        SWEEPFINISH(7);
+        SWEEPMIDDLE1(6),
+        SWEEPMIDDLE2(7),
+        SWEEPMIDDLE3(8),
+        SWEEPFINISH(9),
+        RECALIBRATE(10);
 
         private final int id;
 
@@ -29,9 +35,6 @@ public class ArmController {
         }
     }
 
-    static final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
-    static final PIDController rotatingArmPIDController = new PIDController(2.0565, 0.0, 0.10);
-
     private interface ArmAction {
         public default ArmState run(ArmWrapper MainArm) { return null; };
     }
@@ -40,7 +43,7 @@ public class ArmController {
 
     private ArmState currentStateId;
 
-    private static Map<ArmState, ArmAction> states;
+    private static Map<ArmState, ArmAction> states = new HashMap<>();
     /**
      * 
      * @param MainArm ArmWrapper object
@@ -70,6 +73,7 @@ public class ArmController {
         if (newStateId != null) {
             this.currentStateId = newStateId;
         }
+
     }
 
     public ArmState getState() {
@@ -81,18 +85,26 @@ public class ArmController {
     }
 
     static {
-        ArmController.states.put(ArmState.IDLE, new ArmAction() {});
+        ArmController.states.put(ArmState.IDLE, new ArmAction() {
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                MainArm.analogArm(0);
+                return ArmState.IDLE;
+            }
+        });
 
         ArmController.states.put(ArmState.HOME, new ArmAction() {
-            private final double EPSILON = 0.1;
+            private final double EPSILON = 1;
             private final double HOME_POINT = 0;
 
             @Override
             public ArmState run(ArmWrapper MainArm) {
                 double differencer = MainArm.getAngleArm() - HOME_POINT;
-
-                MainArm.PIDControlArm(HOME_POINT);
-
+                if (Math.abs(differencer) <= EPSILON) {
+                MainArm.PIDControlArm(HOME_POINT, false);
+                } else {
+                MainArm.PIDControlArm(HOME_POINT, true);
+                }
                 if (Math.abs(differencer) <= EPSILON) {
                     return ArmState.IDLE;
                 }
@@ -107,8 +119,11 @@ public class ArmController {
             @Override
             public ArmState run(ArmWrapper MainArm) {
                 double differencer = MainArm.getAngleArm() - LOW_POINT;
-
-                MainArm.PIDControlArm(LOW_POINT);
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(LOW_POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(LOW_POINT, true);
+                    }
 
                 if (Math.abs(differencer) <= EPSILON) {
                     return ArmState.IDLE;
@@ -125,7 +140,11 @@ public class ArmController {
             public ArmState run(ArmWrapper MainArm) {
                 double differencer = MainArm.getAngleArm() - MEDIUM_POINT;
 
-                MainArm.PIDControlArm(MEDIUM_POINT);
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(MEDIUM_POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(MEDIUM_POINT, true);
+                    }
 
                 if (Math.abs(differencer) <= EPSILON) {
                     return ArmState.IDLE;
@@ -134,5 +153,153 @@ public class ArmController {
             }
         });
 
+        ArmController.states.put(ArmState.RECALIBRATE, new ArmAction(){
+            private final double EPSILON = 0.1;
+
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - 0;
+
+                MainArm.analogArm(-.1);
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.SWEEPSTART, new ArmAction(){
+            private final double EPSILON = 0.1;
+            private double POINT = -28;
+            private double GPOINT = -5.5;
+
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - POINT;
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(POINT, true);
+                    }
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlCarriage(GPOINT, false);
+                    } else {
+                    MainArm.PIDControlCarriage(GPOINT, true);
+                    }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.SWEEPMIDDLE1, new ArmAction(){
+            private final double EPSILON = 0.1;
+            private double POINT = -29;
+            private double GPOINT = -21.5;
+
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - POINT;
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(POINT, true);
+                    }
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlCarriage(GPOINT, false);
+                    } else {
+                    MainArm.PIDControlCarriage(GPOINT, true);
+                    }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.SWEEPMIDDLE2, new ArmAction(){
+            private final double EPSILON = 0.1;
+            private double POINT = -23;
+            private double GPOINT = -18;
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - POINT;
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(POINT, true);
+                    }
+                
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlCarriage(GPOINT, false);
+                    } else {
+                    MainArm.PIDControlCarriage(GPOINT, true);
+                    }
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.SWEEPMIDDLE3, new ArmAction(){
+            private final double EPSILON = 0.1;
+            private double POINT = -23;
+            private double GPOINT = -5.5;
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - POINT;
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(POINT, true);
+                    }
+                
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlCarriage(GPOINT, false);
+                    } else {
+                    MainArm.PIDControlCarriage(GPOINT, true);
+                    }
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.SWEEPFINISH, new ArmAction(){
+            private final double EPSILON = 0.001;
+            private double POINT = -7;
+            private double GPOINT = -5.5;
+
+            @Override
+            public ArmState run(ArmWrapper MainArm) {
+                double differencer = MainArm.getAngleArm() - POINT;
+
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlArm(POINT, false);
+                    } else {
+                    MainArm.PIDControlArm(POINT, true);
+                    }
+                
+                if (Math.abs(differencer) <= EPSILON) {
+                    MainArm.PIDControlCarriage(GPOINT, false);
+                    } else {
+                    MainArm.PIDControlCarriage(GPOINT, true);
+                    }
+             
+                if (Math.abs(differencer) <= EPSILON) {
+                    return ArmState.IDLE;
+                }
+                return null;
+            }
+        });
+        
     }
 }

@@ -2,12 +2,15 @@ package arm;
 
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
 import lib.interfaces.MotorInterface;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
 
 public class ArmWrapper {
 
@@ -15,6 +18,12 @@ public class ArmWrapper {
     private Encoder EncoderCarriage;
     private MotorInterface MotorArm;
     private CANSparkMax MotorCarriage;
+
+    static final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
+    static final PIDController rotatingArmPIDController = new PIDController(1.7, 0.0,0.25); //2.0565, 0.0, 0.10);
+
+    static final SimpleMotorFeedforward carriageFeedForward = new SimpleMotorFeedforward(1.422, 0.54615);
+    static final PIDController carriagePIDController = new PIDController(22.616, 0.0, 2.2913);
 
     /**
      * Wrapper for the arm, custom made for the 2023 season
@@ -65,26 +74,47 @@ public class ArmWrapper {
      * @return the output for the PID's
      */
     public double getPIDout(double setpoint) {
-        double differencer = EncoderArm.getDistance();
+        double differencer = getAngleArm()-setpoint;
 
         double speed = -(differencer / Math.abs(differencer));
 
-        double rotatingArmSpeed = speed;
+        final double feedForward = rotatingArmFeedForward.calculate(speed);
+        double output = rotatingArmPIDController.calculate(getAngleArm(), setpoint);
 
-        MotorArm.set(ControlMode.PercentOutput, setpoint);
+        return ((output*0.1)+(feedForward*0.1))/10;
+    }
 
-        final double feedForward = ArmController.rotatingArmFeedForward.calculate(rotatingArmSpeed);
-        double output = ArmController.rotatingArmPIDController.calculate(getAngleArm(), setpoint);
+    public double getPIDoutG(double setpoint) {
+        double differencer = getAngleCarriage()-setpoint;
 
-        return (output * 0.1 + feedForward * 0.1) / 10;
+        double speed = -(differencer / Math.abs(differencer));
+
+        final double feedForward = carriageFeedForward.calculate(speed);
+        double output = carriagePIDController.calculate(getAngleCarriage(), setpoint);
+
+        return ((output*0.1)+(feedForward*0.1)/10);
     }
     /**
      * Only reason for this to exist is to satiate my needs to differentiate it from the analog control
      * @param setpoint desired angle
      */
-    public void PIDControlArm(double setpoint){
-        MotorArm.set(ControlMode.PercentOutput, getPIDout(setpoint));
+    public void PIDControlArm(double setpoint, boolean safety){
+        if (safety) {
+        MotorArm.set2(getPIDout(setpoint));
+        }
         SmartDashboard.putNumber("Chosen Setpoint", setpoint);
+        SmartDashboard.putNumber("PID OUT", getPIDout(setpoint));
+        SmartDashboard.putNumber("Differencer", getAngleArm()-setpoint);
+
+    }
+
+    public void PIDControlCarriage(double setpoint, boolean safety){
+        if (safety) {
+        MotorCarriage.set(getPIDoutG(setpoint));
+        }
+        SmartDashboard.putNumber("Chosen Setpoint", setpoint);
+        SmartDashboard.putNumber("PID OUT", getPIDoutG(setpoint));
+        SmartDashboard.putNumber("Differencer", getAngleCarriage()-setpoint);
 
     }
     /**
@@ -114,6 +144,18 @@ public class ArmWrapper {
     public void calibrate() {
         EncoderArm.reset();
         EncoderCarriage.reset();
+
+        double rA = 360.0/2048.0;
+        EncoderArm.setDistancePerPulse(rA);
+        EncoderArm.setSamplesToAverage(5);
+        EncoderArm.setMinRate(0.05); 
+
+        double rG = .0798;
+        EncoderCarriage.setDistancePerPulse(rG);
+        EncoderCarriage.setSamplesToAverage(5);
+        EncoderCarriage.setMinRate(0.05);
+        MotorCarriage.setIdleMode(IdleMode.kBrake);
+
     }
     /**
      * Drops ArmWrapper data onto the Smart Dashboard
@@ -122,7 +164,7 @@ public class ArmWrapper {
     public void putDashboard() {
         SmartDashboard.putNumber("EncoderArm", getAngleArm());
         SmartDashboard.putNumber("EncoderCarriage", getAngleCarriage());
-        SmartDashboard.putNumber("Encoder Rat Arm", getRateArm());
+        SmartDashboard.putNumber("Encoder Arm Rate", getRateArm());
         SmartDashboard.putNumber("Encoder Carriage Rate", getRateCarriage());
     }
 

@@ -27,8 +27,12 @@ import edu.wpi.first.math.geometry.Rotation2d;
 
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlanner;
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 import com.pathplanner.lib.PathPoint;
@@ -38,6 +42,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import arm.ArmController;
 import arm.ArmWrapper;
+import arm.ArmController.ArmState;
 
 /**
  * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
@@ -171,21 +176,19 @@ public class Robot extends TimedRobot {
     NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
     NetworkTable visionNetworkTable = networkTables.getTable("Vision");
 
-    double pos1;
-    double rotations;
-    double hardcodeddistance;
-
     // NOTE: Variables for auto
     double x = 0.0; // TODO: Figure this from the kp * error
     double y = 0.0; // TODO: Figure this from kp * error
     double z = 0.0; // TODO: Figure this form kp * error
+    long Tinit = System.currentTimeMillis()/1000;
+
 
     // NOTE: The heading of the robot when starting the motion
     double heading = 0.0;
     double gyroError = 0.0;
     double fin = -70.0;
-    long time = System.currentTimeMillis();
-    long end = 0;
+
+    Timer rollerTimer = new Timer("Roller Timer");
 
     @Override
     public void disabledInit() {
@@ -195,8 +198,6 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // NOTE: Reset things
-        // action.initializeRotatingArmEncoder();
-        // action.calibrate();
         armController.setState(ArmController.ArmState.IDLE);
         gyro.calibrate();
         gyro.reset();
@@ -208,7 +209,9 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         putDashboard();
-        if (LS.get()) {MainArm.calibrate();}
+        armController.runPeriodic();
+        if (!LS.get()) {MainArm.calibrate();}
+        
     }
 
     @Override
@@ -228,9 +231,6 @@ public class Robot extends TimedRobot {
         gyro.calibrate();
         gyro.reset();
         heading = gyro.getAngle(); // NOTE: gets init angle
-        end = System.currentTimeMillis() + 30000;
-
-        hardcodeddistance = 0;
     }
 
     @Override
@@ -260,7 +260,7 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Gyro Angle: ", gyro.getAngle());
 
         SmartDashboard.putNumber("Gyro Rate ", gyro.getRate());
-
+        SmartDashboard.putBoolean("Limit Switch State", LS.get());
         MainArm.putDashboard();
     }
 
@@ -291,27 +291,40 @@ public class Robot extends TimedRobot {
         double strafe = 0.0;
         double forward = 0.0;
         double rotate = 0.0;
-        double multiplier = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
-        
+        double multiplier = (-controllerB.getLeftTriggerAxis() * 0.7) + (controllerB.getRightTriggerAxis() * 0.7 +0.01); // (-RightStick.getThrottle() * 0.5) + 0.5;
+        MainArm.analogCarriage(multiplier);
         // NOTE: Joystick direction is opposite
         strafe = bufferJoystickInput(-leftJoystickX * multiplier, INPUT_BUFFER_AMOUNT);
         forward = bufferJoystickInput(-leftJoystickY * multiplier, INPUT_BUFFER_AMOUNT);
         rotate = bufferJoystickInput(rightJoystickX * multiplier, INPUT_BUFFER_AMOUNT);
         drive.driveCartesian(forward, -strafe, rotate);
-
+        System.out.println(armController.getState());
         if (controllerB.getBButtonPressed()) {
-            armController.setState(ArmController.ArmState.HOME);
+            armController.setState(ArmController.ArmState.SWEEPMIDDLE3);
         }
-        if (controllerB.getAButtonPressed()) {
-            handPistonSolenoid.toggle(); // NOTE: Toggle gripper
+        if (controllerA.getAButtonPressed()) {
+            spinnerA.set(ControlMode.PercentOutput, -0.8); // Outer Roller
+            spinnerB.set(ControlMode.PercentOutput, -0.8); // Inner Roller
+            
+            StopRollerTask stopRollerTask = new StopRollerTask();
+            rollerTimer.schedule(stopRollerTask, 1000); // In 2 seconds, run the stop roller task 
+        }
+        if (controllerB.getAButtonPressed()){
+            armController.setState(ArmState.SWEEPFINISH);
         }
         if (controllerB.getYButtonPressed()) {
-            armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
+            //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
+            armController.setState(ArmController.ArmState.SWEEPMIDDLE2);
         }
-        if (controllerB.getXButton()) {
-            armController.setState(ArmController.ArmState.LOW);
+        if (controllerB.getXButtonPressed()) {
+            armController.setState(ArmController.ArmState.SWEEPSTART);
         }
-
+        if (controllerB.getBackButtonPressed()) {
+            armController.setState(ArmState.HOME);
+        }
+        if(controllerB.getStartButton()) {
+            armController.setState(ArmState.SWEEPMIDDLE1);
+        }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
         }
@@ -387,5 +400,16 @@ public class Robot extends TimedRobot {
                 new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
                 new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
         );
+    }
+
+
+    private class StopRollerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            spinnerA.set(ControlMode.PercentOutput, 0);
+            spinnerB.set(ControlMode.PercentOutput, 0);
+        }
+        
     }
 }
