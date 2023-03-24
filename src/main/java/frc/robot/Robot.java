@@ -131,7 +131,8 @@ public class Robot extends TimedRobot {
 
     private static final int BUTTON_PANEL_USB_PORT = 4;
 
-    private static final int LIMIT_SWITCH_PORT = 4;
+    private static final int LIMIT_SWITCH_PORT_A = 4;
+    private static final int LIMIT_SWITCH_PORT_B = 5;
 
     // NOTE: Regular constants
     private static final double INPUT_BUFFER_AMOUNT = 0.2;
@@ -163,11 +164,12 @@ public class Robot extends TimedRobot {
     Solenoid brakePistonSolenoid;
 
     //NOTE: Misc Digital Input
-    DigitalInput LS = new DigitalInput(LIMIT_SWITCH_PORT);
+    DigitalInput LSA = new DigitalInput(LIMIT_SWITCH_PORT_A);
+    DigitalInput LSB = new DigitalInput(LIMIT_SWITCH_PORT_B);
     
     // NOTE: Drives / Actors
-    ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor);
-    ArmController armController = new ArmController(MainArm, null);
+    ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
+    ArmController armController = new ArmController(MainArm, ArmState.RECALIBRATE);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
@@ -209,8 +211,9 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         putDashboard();
-        armController.runPeriodic();
-        if (!LS.get()) {MainArm.calibrate();}
+        armController.runPeriodic(); //NOTE: WHY DO WE NEED TWO IT DOESNT MAKE SENSE
+        if (!LSA.get()) {MainArm.calibrateArm();}
+        if (!LSA.get()) {MainArm.calibrateCarriage();}
         
     }
 
@@ -218,6 +221,7 @@ public class Robot extends TimedRobot {
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
+        armController.setState(ArmState.RECALIBRATE);
     }
 
     @Override
@@ -260,7 +264,9 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("Gyro Angle: ", gyro.getAngle());
 
         SmartDashboard.putNumber("Gyro Rate ", gyro.getRate());
-        SmartDashboard.putBoolean("Limit Switch State", LS.get());
+
+        SmartDashboard.putBoolean("Limit Switch A State", LSA.get());
+        SmartDashboard.putBoolean("Limit Switch B State", LSB.get());
         MainArm.putDashboard();
     }
 
@@ -291,30 +297,40 @@ public class Robot extends TimedRobot {
         double strafe = 0.0;
         double forward = 0.0;
         double rotate = 0.0;
-        double multiplier = (-controllerB.getLeftTriggerAxis() * 0.7) + (controllerB.getRightTriggerAxis() * 0.7 +0.01); // (-RightStick.getThrottle() * 0.5) + 0.5;
+        double multiplier = (-controllerB.getLeftTriggerAxis() * 0.7) + (controllerB.getRightTriggerAxis() * 0.7 +0.01);
+        double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
         MainArm.analogCarriage(multiplier);
         // NOTE: Joystick direction is opposite
-        strafe = bufferJoystickInput(-leftJoystickX * multiplier, INPUT_BUFFER_AMOUNT);
-        forward = bufferJoystickInput(-leftJoystickY * multiplier, INPUT_BUFFER_AMOUNT);
-        rotate = bufferJoystickInput(rightJoystickX * multiplier, INPUT_BUFFER_AMOUNT);
+        strafe = bufferJoystickInput(-leftJoystickX * adjuster, INPUT_BUFFER_AMOUNT);
+        forward = bufferJoystickInput(-leftJoystickY * adjuster, INPUT_BUFFER_AMOUNT);
+        rotate = bufferJoystickInput(rightJoystickX * adjuster, INPUT_BUFFER_AMOUNT);
+        SmartDashboard.putNumber("F", forward);
+        SmartDashboard.putNumber("S", strafe);
+        SmartDashboard.putNumber("R", rotate);
+
         drive.driveCartesian(forward, -strafe, rotate);
         System.out.println(armController.getState());
         if (controllerB.getBButtonPressed()) {
             armController.setState(ArmController.ArmState.SWEEPMIDDLE3);
         }
         if (controllerA.getAButtonPressed()) {
-            spinnerA.set(ControlMode.PercentOutput, -0.8); // Outer Roller
-            spinnerB.set(ControlMode.PercentOutput, -0.8); // Inner Roller
+            MainArm.spinIn();
             
             StopRollerTask stopRollerTask = new StopRollerTask();
-            rollerTimer.schedule(stopRollerTask, 1000); // In 2 seconds, run the stop roller task 
+            rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
+        }
+        if (controllerA.getBButtonPressed()) {
+            MainArm.spinOut();
+            
+            StopRollerTask stopRollerTask = new StopRollerTask();
+            rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
         }
         if (controllerB.getAButtonPressed()){
             armController.setState(ArmState.SWEEPFINISH);
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
-            armController.setState(ArmController.ArmState.SWEEPMIDDLE2);
+            armController.setState(ArmController.ArmState.RECALIBRATE);
         }
         if (controllerB.getXButtonPressed()) {
             armController.setState(ArmController.ArmState.SWEEPSTART);
@@ -322,9 +338,9 @@ public class Robot extends TimedRobot {
         if (controllerB.getBackButtonPressed()) {
             armController.setState(ArmState.HOME);
         }
-        if(controllerB.getStartButton()) {
-            armController.setState(ArmState.SWEEPMIDDLE1);
-        }
+            if(controllerB.getStartButton()) {
+                armController.setState(ArmState.SWEEPMIDDLE1);
+            }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
         }

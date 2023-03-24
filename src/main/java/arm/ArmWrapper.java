@@ -19,8 +19,11 @@ public class ArmWrapper {
     private MotorInterface MotorArm;
     private CANSparkMax MotorCarriage;
 
+    private MotorInterface Aspinner;
+    private MotorInterface Bspinner;
+
     static final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
-    static final PIDController rotatingArmPIDController = new PIDController(1.7, 0.0,0.25); //2.0565, 0.0, 0.10);
+    static final PIDController rotatingArmPIDController = new PIDController(2.0, 0.0, 0.10);//1.7, 0.0,0.25); //2.0565, 0.0, 0.10);
 
     static final SimpleMotorFeedforward carriageFeedForward = new SimpleMotorFeedforward(1.422, 0.54615);
     static final PIDController carriagePIDController = new PIDController(22.616, 0.0, 2.2913);
@@ -35,11 +38,13 @@ public class ArmWrapper {
      * 
      * @see ArmController
      */
-    public ArmWrapper(Encoder armEncoder, Encoder carriageEncoder, MotorInterface armMotor, CANSparkMax carriageMotor) {
+    public ArmWrapper(Encoder armEncoder, Encoder carriageEncoder, MotorInterface armMotor, CANSparkMax carriageMotor, MotorInterface spinnerA, MotorInterface spinnerB) {
         EncoderArm = armEncoder;
         EncoderCarriage = carriageEncoder;
         MotorArm = armMotor;
         MotorCarriage = carriageMotor;
+        Aspinner = spinnerA;
+        Bspinner = spinnerB; 
     }
 
     /**
@@ -102,18 +107,18 @@ public class ArmWrapper {
         if (safety) {
         MotorArm.set2(getPIDout(setpoint));
         }
-        SmartDashboard.putNumber("Chosen Setpoint", setpoint);
-        SmartDashboard.putNumber("PID OUT", getPIDout(setpoint));
+        SmartDashboard.putNumber("Chosen Setpoint ARM", setpoint);
+        SmartDashboard.putNumber("PID OUT ARM", getPIDout(setpoint));
         SmartDashboard.putNumber("Differencer", getAngleArm()-setpoint);
 
     }
 
     public void PIDControlCarriage(double setpoint, boolean safety){
         if (safety) {
-        MotorCarriage.set(getPIDoutG(setpoint));
+        MotorCarriage.set(getPIDoutG(setpoint)+0.0001);
         }
-        SmartDashboard.putNumber("Chosen Setpoint", setpoint);
-        SmartDashboard.putNumber("PID OUT", getPIDoutG(setpoint));
+        SmartDashboard.putNumber("Chosen Setpoint CARRIAGE", setpoint);
+        SmartDashboard.putNumber("PID OUT CARRIAGE", getPIDoutG(setpoint));
         SmartDashboard.putNumber("Differencer", getAngleCarriage()-setpoint);
 
     }
@@ -141,15 +146,23 @@ public class ArmWrapper {
      * 
      * @see Encoder
      */
-    public void calibrate() {
+    public void calibrateArm() {
         EncoderArm.reset();
-        EncoderCarriage.reset();
 
         double rA = 360.0/2048.0;
         EncoderArm.setDistancePerPulse(rA);
         EncoderArm.setSamplesToAverage(5);
         EncoderArm.setMinRate(0.05); 
-
+    }
+    /**
+     * Calibrates the encoders when called. (RESETS VALUES TO 0) (USE WITH LIMIT
+     * SWITCH)
+     * 
+     * @see Encoder
+     */
+    public void calibrateCarriage(){
+        EncoderCarriage.reset();
+        
         double rG = .0798;
         EncoderCarriage.setDistancePerPulse(rG);
         EncoderCarriage.setSamplesToAverage(5);
@@ -157,6 +170,17 @@ public class ArmWrapper {
         MotorCarriage.setIdleMode(IdleMode.kBrake);
 
     }
+
+    public void spinOut(){
+        Aspinner.set(ControlMode.PercentOutput, 0.8);
+        Bspinner.set(ControlMode.PercentOutput, 0.8);
+    }
+
+    public void spinIn(){
+        Aspinner.set(ControlMode.PercentOutput, -0.8);
+        Bspinner.set(ControlMode.PercentOutput, -0.8);
+    }
+
     /**
      * Drops ArmWrapper data onto the Smart Dashboard
      * @see SmartDashboard
