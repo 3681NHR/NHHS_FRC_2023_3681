@@ -24,11 +24,10 @@ public class ArmWrapper {
     private MotorInterface spinnerB;
 
     static final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
-    static final PIDController rotatingArmPIDController = new PIDController(2.0, 0.0, 0.10);// 1.7, 0.0,0.25); //2.0565,
-                                                                                            // 0.0, 0.10);
-
+    static final PIDController rotatingArmPIDController = new PIDController(2.0, 0.0, 0.10);
+    // 1.7, 0.0,0.25); 2.0565, 0.0, 0.10);
     static final SimpleMotorFeedforward carriageFeedForward = new SimpleMotorFeedforward(1.422, 0.54615);
-    static final PIDController carriagePIDController = new PIDController(22.616, 0.0, 2.2913);
+    static final PIDController carriagePIDController = new PIDController(10.616, 0.0, 2.2913);
 
     /**
      * Wrapper for the arm, custom made for the 2023 season
@@ -78,6 +77,36 @@ public class ArmWrapper {
         return carriageEncoder.getRate();
     }
 
+    public void terminateArm(){
+        armMotor.setVoltage(0);
+        armMotor.set(ControlMode.PercentOutput, 0);
+        armMotor.set2(0);
+    }
+
+    public void terminateCarriage(){
+        carriageMotor.setVoltage(0.1);
+    }
+
+    public double getExtension(ArmState State){
+        double FIN_SETPOINT;
+
+        if (State == ArmState.Low){
+            FIN_SETPOINT = -16;
+
+            return FIN_SETPOINT;
+        } else if (State == ArmState.Medium) {
+            FIN_SETPOINT = -14;
+
+            return FIN_SETPOINT;
+        } else if (State == ArmState.High) {
+            FIN_SETPOINT = -22;
+
+            return FIN_SETPOINT;
+        } else {
+            return 0;
+        }
+    }
+
     /**
      * @return the output for the PID's
      */
@@ -92,6 +121,9 @@ public class ArmWrapper {
         return ((output * 0.1) + (feedForward * 0.1)) / 10;
     }
 
+    /**
+     * @return the output for the PID's
+     */
     public double getPIDoutG(double desiredAngle) {
         double differencer = getCarriageAngle() - desiredAngle;
 
@@ -104,40 +136,34 @@ public class ArmWrapper {
     }
 
     /**
-     * Only reason for this to exist is to satiate my needs to differentiate it from
-     * the analog control
+     * Uses getPIDout readings to control the movement of the motor
      * 
      * @param desiredAngle
      */
     public boolean PIDControlArm(double desiredAngle) {
         double difference = getArmAngle() - desiredAngle;
+        armMotor.set2(getPIDout(desiredAngle));
+
         if (Math.abs(difference) <= EPSILON) {
             return true;
         }
-            
-        armMotor.set2(getPIDout(desiredAngle));
-
         SmartDashboard.putNumber("Chosen Setpoint ARM", desiredAngle);
         SmartDashboard.putNumber("PID OUT ARM", getPIDout(desiredAngle));
-        SmartDashboard.putNumber("Differencer", getArmAngle() - desiredAngle);
+        SmartDashboard.putNumber("Differencer A", getArmAngle() - desiredAngle);
 
         return false;
     }
 
     public boolean PIDControlCarriage(double desiredAngle) {
-        double difference = getArmAngle() - desiredAngle;
-        if (Math.abs(difference) <= EPSILON) {
-            return true;
-        }
+        carriageMotor.set(getPIDoutG(desiredAngle));
 
         // NOTE: 0.0001 is added to ensure the carriage is kept up opposing gravity
-        carriageMotor.set(getPIDoutG(desiredAngle) + 0.0001);
 
         SmartDashboard.putNumber("Chosen Setpoint CARRIAGE", desiredAngle);
         SmartDashboard.putNumber("PID OUT CARRIAGE", getPIDoutG(desiredAngle));
-        SmartDashboard.putNumber("Differencer", getCarriageAngle() - desiredAngle);
-        
-        return false;
+        SmartDashboard.putNumber("Differencer C", getCarriageAngle() - desiredAngle);
+
+        return true;
     }
 
     /**
@@ -165,12 +191,7 @@ public class ArmWrapper {
      * @see Encoder
      */
     public void calibrateArm() {
-        armEncoder.reset();
-
-        double rA = 360.0 / 2048.0;
-        armEncoder.setDistancePerPulse(rA);
-        armEncoder.setSamplesToAverage(5);
-        armEncoder.setMinRate(0.05);
+        armEncoder.reset();;
     }
 
     /**
@@ -181,13 +202,19 @@ public class ArmWrapper {
      */
     public void calibrateCarriage() {
         carriageEncoder.reset();
+    }
 
+    public void generalCalibration(){
         double rG = 0.0798;
         carriageEncoder.setDistancePerPulse(rG);
         carriageEncoder.setSamplesToAverage(5);
         carriageEncoder.setMinRate(0.05);
         carriageMotor.setIdleMode(IdleMode.kBrake);
 
+        double rA = 360.0 / 2048.0;
+        armEncoder.setDistancePerPulse(rA);
+        armEncoder.setSamplesToAverage(5);
+        armEncoder.setMinRate(0.05);
     }
 
     public void spinOut() {
@@ -198,6 +225,11 @@ public class ArmWrapper {
     public void spinIn() {
         spinnerA.set(ControlMode.PercentOutput, -0.8);
         spinnerB.set(ControlMode.PercentOutput, -0.8);
+    }
+
+    public void spinStop(){
+        spinnerA.set(ControlMode.PercentOutput, 0);
+        spinnerB.set(ControlMode.PercentOutput, 0);
     }
 
     /**

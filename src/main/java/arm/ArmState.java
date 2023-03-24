@@ -2,7 +2,9 @@ package arm;
 
 public enum ArmState {
     Idle,
+    MatchIdle,
     Home,
+    Analog,
     Low,
     Medium,
     High,
@@ -10,10 +12,15 @@ public enum ArmState {
     SweepMiddleA,
     SweepMiddleB,
     SweepMiddleC,
-    SweepFinish,
-    Recalibrate,
-    Extension,
-    Dropping;
+    Finish,
+    RecalibrateWait,
+    RecalibrateStageA,
+    RecalibrateStageB,
+    ExtensionLow,
+    ExtensionMedium,
+    ExtensionHigh,
+    Dropping,
+    Reel;
 
     public int getId() {
         return this.ordinal();

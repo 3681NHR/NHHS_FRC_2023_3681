@@ -24,7 +24,6 @@ public class ArmController {
     private static Map<ArmState, ArmAction> states = new HashMap<>();
 
     /**
-     * 
      * @param mainArm      ArmWrapper object
      * @param defaultState null
      */
@@ -84,12 +83,13 @@ public class ArmController {
         return ArmController.states.get(this.currentStateId);
     }
 
-    static {
+    static { // NOTE: TERMINATE ALL MOVEMENT
         ArmController.states.put(ArmState.Idle, new ArmAction() {
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                MainArm.analogArm(0);
-
+                MainArm.terminateArm();
+                MainArm.terminateCarriage();
+                MainArm.spinStop();
                 return ArmActionResult.noChange();
             }
         });
@@ -106,13 +106,21 @@ public class ArmController {
             }
         });
 
+        ArmController.states.put(ArmState.Analog, new ArmAction() {
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+                return ArmActionResult.noChange();
+            }
+        });
+
         ArmController.states.put(ArmState.Low, new ArmAction() {
-            private final double LOW_ANGLE = -20;
+            private final double LOW_ANGLE = -25;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
                 if (MainArm.PIDControlArm(LOW_ANGLE)) {
-                    return ArmActionResult.changeTo(ArmState.Idle);
+                    return ArmActionResult.changeTo(ArmState.ExtensionLow);
                 }
                 return ArmActionResult.noChange();
             }
@@ -124,26 +132,62 @@ public class ArmController {
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
                 if (MainArm.PIDControlArm(MEDIUM_POINT)) {
-                    return ArmActionResult.changeTo(ArmState.Idle);
+                    return ArmActionResult.changeTo(ArmState.ExtensionMedium);
                 }
-                
+
                 return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.Recalibrate, new ArmAction() {
+        ArmController.states.put(ArmState.High, new ArmAction() {
+            private final double MEDIUM_POINT = -94;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                double differencer = MainArm.getArmAngle();
+                if (MainArm.PIDControlArm(MEDIUM_POINT)) {
+                    return ArmActionResult.changeTo(ArmState.ExtensionHigh);
+                }
 
-                MainArm.analogArm(0.1);
-                MainArm.analogCarriage(0.1);
+                return ArmActionResult.noChange();
+            }
+        });
+        ArmController.states.put(ArmState.RecalibrateWait, new ArmAction() {
 
-                if (Math.abs(differencer) == 0.0) {
-                    return ArmActionResult.changeTo(ArmState.Idle);
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+                MainArm.analogArm(0.3);
+                MainArm.analogCarriage(0.5);
+                return ArmActionResult.changeToAfter(ArmState.RecalibrateStageA, 250);
+            }
+        });
+
+        ArmController.states.put(ArmState.RecalibrateStageA, new ArmAction() {
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+
+                if (MainArm.getCarriageAngle() == 0.0) {
+                    MainArm.analogCarriage(0.0);
+                    return ArmActionResult.changeToAfter(ArmState.RecalibrateStageB, 500);
+                } else {
+                    MainArm.analogCarriage(0.8);
                 }
                 return ArmActionResult.noChange();
+            }
+        });
+
+        ArmController.states.put(ArmState.RecalibrateStageB, new ArmAction() {
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+
+                if (MainArm.getArmAngle() == 0.0) {
+                    MainArm.analogArm(0.0);
+                    return ArmActionResult.changeTo(ArmState.MatchIdle);
+                } else {
+                    MainArm.analogArm(0.3);
+                return ArmActionResult.noChange();
+                }
             }
         });
 
@@ -153,8 +197,10 @@ public class ArmController {
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
-                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                MainArm.PIDControlCarriage(CARRIAGE_ANGLE);
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE)) {
                     return ArmActionResult.changeToAfter(ArmState.SweepMiddleA, 250);
                 }
 
@@ -164,15 +210,16 @@ public class ArmController {
 
         ArmController.states.put(ArmState.SweepMiddleA, new ArmAction() {
             private double ARM_ANGLE = -28;
-            private double CARRIAGE_ANGLE = -22;
+            private double CARRIAGE_ANGLE = -22.5;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
                 MainArm.spinIn();
-                
-                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
-                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
-                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleB, 1500);
+                MainArm.PIDControlCarriage(CARRIAGE_ANGLE);
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleB, 700);
                 }
 
                 return ArmActionResult.noChange();
@@ -180,16 +227,19 @@ public class ArmController {
         });
 
         ArmController.states.put(ArmState.SweepMiddleB, new ArmAction() {
-            private double ARM_ANGLE = -24;
-            private double CARRIAGE_ANGLE = -21.5;
+            private double ARM_ANGLE = -20;
+            private double CARRIAGE_ANGLE = -20;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
                 MainArm.spinIn();
 
-                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
-                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
-                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleC, 1500);
+                MainArm.PIDControlCarriage(CARRIAGE_ANGLE);
+
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleC, 1200);
                 }
                 return ArmActionResult.noChange();
             }
@@ -201,55 +251,106 @@ public class ArmController {
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
-                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
-                    return ArmActionResult.changeToAfter(ArmState.SweepFinish, 1500);
+                MainArm.spinStop();
+                MainArm.PIDControlCarriage(CARRIAGE_ANGLE);
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.Finish, 1000);
                 }
                 return null;
             }
         });
 
-        ArmController.states.put(ArmState.SweepFinish, new ArmAction() {
+        ArmController.states.put(ArmState.Finish, new ArmAction() {
             private double ARM_ANGLE = -7;
             private double CARRIAGE_ANGLE = -5.5;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                MainArm.spinStop();
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
                 if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
-                    return ArmActionResult.changeTo(ArmState.Idle);
+                    return ArmActionResult.changeTo(ArmState.MatchIdle);
+                }
+                return null;
+            }
+        });
+
+        ArmController.states.put(ArmState.MatchIdle, new ArmAction() {
+            private double ARM_ANGLE = -7;
+            private double CARRIAGE_ANGLE = -5.5;
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+                MainArm.spinStop();
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both
+                // close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeTo(ArmState.MatchIdle);
                 }
                 return null;
             }
         });
 
         // TODO: THIS
-        ArmController.states.put(ArmState.Extension, new ArmAction(){
-            private double ARM_ANGLE = -7;
-            // private double CARRIAGE_ANGLE = -5.5;
-
+        ArmController.states.put(ArmState.ExtensionLow, new ArmAction() {
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                double differencer = MainArm.getCarriageAngle() - ARM_ANGLE;
+                double CARRIAGE_ANGLE = MainArm.getExtension(ArmState.Low);
 
-                if (Math.abs(differencer) <= 3.0) {
-                    return ArmActionResult.changeToAfter(ArmState.Dropping, 2000);
+                if (MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.Dropping, 1500);
+                }
+                return ArmActionResult.noChange();
+            }
+        });
+
+        ArmController.states.put(ArmState.ExtensionMedium, new ArmAction() {
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+                double CARRIAGE_ANGLE = MainArm.getExtension(ArmState.Medium);
+
+                if (MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.Dropping, 1500);
+                }
+                return ArmActionResult.noChange();
+            }
+        });
+
+        ArmController.states.put(ArmState.ExtensionHigh, new ArmAction() {
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+                double CARRIAGE_ANGLE = MainArm.getExtension(ArmState.High);
+
+                if (MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.Dropping, 1500);
                 }
                 return ArmActionResult.noChange();
             }
         });
 
         // TODO: THIS
-        ArmController.states.put(ArmState.Dropping, new ArmAction(){
-            private double ARM_ANGLE = -7;
+        ArmController.states.put(ArmState.Dropping, new ArmAction() {
             // private double CARRIAGE_ANGLE = -5.5;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
-                double differencer = MainArm.getArmAngle() - ARM_ANGLE;
+                MainArm.spinOut();
+                return ArmActionResult.changeToAfter(ArmState.Reel, 1000);
 
-                if (Math.abs(differencer) <= 3.0) {
-                    return ArmActionResult.changeToAfter(ArmState.Idle, 2000);
+            }
+        });
+
+        ArmController.states.put(ArmState.Reel, new ArmAction() {
+            private double CARRIAGE_ANGLE = -5.5;
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
+
+                if (MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.MatchIdle, 2000);
                 }
                 return ArmActionResult.noChange();
             }

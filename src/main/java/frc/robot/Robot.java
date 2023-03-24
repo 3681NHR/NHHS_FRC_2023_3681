@@ -22,20 +22,21 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+// import edu.wpi.first.math.geometry.Translation2d;
+// import edu.wpi.first.math.geometry.Rotation2d;
 
 import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.pathplanner.lib.PathPlannerTrajectory;
-import com.pathplanner.lib.PathPlanner;
 import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.pathplanner.lib.PathConstraints;
-import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
-import com.pathplanner.lib.PathPoint;
+// import com.pathplanner.lib.PathPlannerTrajectory;
+// import com.pathplanner.lib.PathPlanner;
+
+// import com.pathplanner.lib.PathConstraints;
+// import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
+// import com.pathplanner.lib.PathPoint;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -169,7 +170,7 @@ public class Robot extends TimedRobot {
     
     // NOTE: Drives / Actors
     ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    ArmController armController = new ArmController(MainArm, ArmState.Recalibrate);
+    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
@@ -195,25 +196,32 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         armPistonSolenoid.set(kReverse);
+        armController.setState(ArmState.Idle);
+        MainArm.generalCalibration();
+
     }
 
     @Override
     public void robotInit() {
         // NOTE: Reset things
         armController.setState(ArmState.Idle);
+        MainArm.calibrateArm();
+        MainArm.calibrateCarriage();
+        MainArm.generalCalibration();
         gyro.calibrate();
         gyro.reset();
         initSolenoid(7, 5, 4, 6); // NOTE: channels for solenoids
-
+        
         System.out.println("Robot Initiated");
     }
 
     @Override
     public void robotPeriodic() {
+
         putDashboard();
         armController.runPeriodic(); //NOTE: WHY DO WE NEED TWO IT DOESNT MAKE SENSE
         if (!LSA.get()) {MainArm.calibrateArm();}
-        if (!LSA.get()) {MainArm.calibrateCarriage();}
+        if (!LSB.get()) {MainArm.calibrateCarriage();}
         
     }
 
@@ -221,7 +229,8 @@ public class Robot extends TimedRobot {
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.Recalibrate);
+        armController.setState(ArmState.RecalibrateWait);
+        MainArm.generalCalibration();
     }
 
     @Override
@@ -234,7 +243,7 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
-        heading = gyro.getAngle(); // NOTE: gets init angle
+        armController.setState(ArmState.RecalibrateWait);
     }
 
     @Override
@@ -293,15 +302,35 @@ public class Robot extends TimedRobot {
     }
 
     public void processInputs() {
+        double carriageSpeedL;
+        double carriageSpeedR;
+
         double leftJoystickY = controllerA.getLeftY();
         double leftJoystickX = controllerA.getLeftX();
         double rightJoystickX = controllerA.getRightX();
         double strafe = 0.0;
         double forward = 0.0;
         double rotate = 0.0;
-        double multiplier = (-controllerB.getLeftTriggerAxis() * 0.7) + (controllerB.getRightTriggerAxis() * 0.7 +0.01);
+        double multiplier = (controllerB.getLeftTriggerAxis() * 0.3) - (controllerB.getRightTriggerAxis() * 0.5);
         double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
-        MainArm.analogCarriage(multiplier);
+        
+        if (controllerB.getLeftBumper()) {
+            carriageSpeedL = 0.7;
+        } else {
+            carriageSpeedL = 0.01;
+        }
+
+        if (controllerB.getRightBumper()) {
+            carriageSpeedR = 0.7;
+        } else {
+            carriageSpeedR = 0.01;
+        }
+
+        if (armController.getState() == ArmState.Analog) {
+        MainArm.analogCarriage(carriageSpeedL-carriageSpeedR);
+        MainArm.analogArm(multiplier*2);
+        }
+
         // NOTE: Joystick direction is opposite
         strafe = bufferJoystickInput(-leftJoystickX * adjuster, INPUT_BUFFER_AMOUNT);
         forward = bufferJoystickInput(-leftJoystickY * adjuster, INPUT_BUFFER_AMOUNT);
@@ -311,9 +340,8 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("R", rotate);
 
         drive.driveCartesian(forward, -strafe, rotate);
-        System.out.println(armController.getState());
         if (controllerB.getBButtonPressed()) {
-            armController.setState(ArmState.SweepMiddleC);
+            armController.setState(ArmState.Analog);
         }
         if (controllerA.getAButtonPressed()) {
             MainArm.spinIn();
@@ -328,11 +356,11 @@ public class Robot extends TimedRobot {
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
         }
         if (controllerB.getAButtonPressed()){
-            armController.setState(ArmState.SweepFinish);
+            armController.setState(ArmState.Finish);
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
-            armController.setState(ArmState.Recalibrate);
+            armController.setState(ArmState.High);
         }
         if (controllerB.getXButtonPressed()) {
             armController.setState(ArmState.SweepStart);
@@ -340,9 +368,9 @@ public class Robot extends TimedRobot {
         if (controllerB.getBackButtonPressed()) {
             armController.setState(ArmState.Home);
         }
-            if(controllerB.getStartButton()) {
-                armController.setState(ArmState.SweepMiddleA);
-            }
+        if(controllerB.getStartButton()) {
+                armController.setState(ArmState.RecalibrateWait);
+        }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
         }
@@ -407,18 +435,18 @@ public class Robot extends TimedRobot {
     // new Pose2d(5.0, 13.5, new Rotation2d())
     // );
 
-    public void pathplanner() {
-        PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
-        PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
+    // public void pathplanner() {
+    //     PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
+    //     PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
 
-        // NOTE: Print the velocity at the sampled time for impromptu, theoretically use
-        // this with the funny computere vision
-        PathPlannerTrajectory traj1 = PathPlanner.generatePath(
-                new PathConstraints(4, 3),
-                new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
-                new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
-        );
-    }
+    //     // NOTE: Print the velocity at the sampled time for impromptu, theoretically use
+    //     // this with the funny computere vision
+    //     PathPlannerTrajectory traj1 = PathPlanner.generatePath(
+    //             new PathConstraints(4, 3),
+    //             new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
+    //             new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
+    //     );
+    // }
 
 
     private class StopRollerTask extends TimerTask {
