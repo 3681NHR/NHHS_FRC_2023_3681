@@ -42,7 +42,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import arm.ArmController;
 import arm.ArmWrapper;
-import arm.ArmController.ArmState;
+import arm.ArmState;
 
 /**
  * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
@@ -169,7 +169,7 @@ public class Robot extends TimedRobot {
     
     // NOTE: Drives / Actors
     ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    ArmController armController = new ArmController(MainArm, ArmState.RECALIBRATE);
+    ArmController armController = new ArmController(MainArm, ArmState.Recalibrate);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
@@ -200,7 +200,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // NOTE: Reset things
-        armController.setState(ArmController.ArmState.IDLE);
+        armController.setState(ArmState.Idle);
         gyro.calibrate();
         gyro.reset();
         initSolenoid(7, 5, 4, 6); // NOTE: channels for solenoids
@@ -221,7 +221,7 @@ public class Robot extends TimedRobot {
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.RECALIBRATE);
+        armController.setState(ArmState.Recalibrate);
     }
 
     @Override
@@ -268,6 +268,8 @@ public class Robot extends TimedRobot {
         SmartDashboard.putBoolean("Limit Switch A State", LSA.get());
         SmartDashboard.putBoolean("Limit Switch B State", LSB.get());
         MainArm.putDashboard();
+        
+        armController.putDashboard();
     }
 
     public void initSolenoid(int fc1, int rc1, int fc2, int rc2) {
@@ -311,7 +313,7 @@ public class Robot extends TimedRobot {
         drive.driveCartesian(forward, -strafe, rotate);
         System.out.println(armController.getState());
         if (controllerB.getBButtonPressed()) {
-            armController.setState(ArmController.ArmState.SWEEPMIDDLE3);
+            armController.setState(ArmState.SweepMiddleC);
         }
         if (controllerA.getAButtonPressed()) {
             MainArm.spinIn();
@@ -326,20 +328,20 @@ public class Robot extends TimedRobot {
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
         }
         if (controllerB.getAButtonPressed()){
-            armController.setState(ArmState.SWEEPFINISH);
+            armController.setState(ArmState.SweepFinish);
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
-            armController.setState(ArmController.ArmState.RECALIBRATE);
+            armController.setState(ArmState.Recalibrate);
         }
         if (controllerB.getXButtonPressed()) {
-            armController.setState(ArmController.ArmState.SWEEPSTART);
+            armController.setState(ArmState.SweepStart);
         }
         if (controllerB.getBackButtonPressed()) {
-            armController.setState(ArmState.HOME);
+            armController.setState(ArmState.Home);
         }
             if(controllerB.getStartButton()) {
-                armController.setState(ArmState.SWEEPMIDDLE1);
+                armController.setState(ArmState.SweepMiddleA);
             }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();

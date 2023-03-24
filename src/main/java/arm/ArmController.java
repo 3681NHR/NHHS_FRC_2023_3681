@@ -2,87 +2,70 @@ package arm;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import static edu.wpi.first.util.ErrorMessages.requireNonNullParam;
 
 public class ArmController {
-
-    public enum ArmState {
-        IDLE(0),
-        HOME(1),
-        LOW(2),
-        MEDIUM(3),
-        HIGH(4),
-        SWEEPSTART(5),
-        SWEEPMIDDLE1(6),
-        SWEEPMIDDLE2(7),
-        SWEEPMIDDLE3(8),
-        SWEEPFINISH(9),
-        RECALIBRATE(10),
-        EXTENSION(11),
-        DROPPING(12);
-
-        private final int id;
-
-        ArmState(int id) {
-            this.id = id;
-        }
-
-        public int getId() {
-            return this.id;
-        }
-    }
-
     private interface ArmAction {
-        public default ArmState run(ArmWrapper MainArm, ArmController armController) {
-            return null;
+        public default ArmActionResult run(ArmWrapper MainArm) {
+            return ArmActionResult.noChange();
         };
     }
 
-    private static Timer stateSchedulingTimer = new Timer("State Scheduler Timer");
-
-    private ArmWrapper MainArm;
+    private ArmWrapper mainArm;
 
     private ArmState currentStateId;
 
-    private boolean waitingForNextTaskToExecute = false;
+    private ArmState queuedState = null;
+    private long queuedTime = 0;
 
     private static Map<ArmState, ArmAction> states = new HashMap<>();
 
     /**
      * 
-     * @param MainArm      ArmWrapper object
+     * @param mainArm      ArmWrapper object
      * @param defaultState null
      */
-    public ArmController(ArmWrapper MainArm, ArmState defaultState) {
-        requireNonNullParam(MainArm, "MainArm", "ArmController");
+    public ArmController(ArmWrapper mainArm, ArmState defaultState) {
+        requireNonNullParam(mainArm, "MainArm", "ArmController");
 
-        this.MainArm = MainArm;
+        this.mainArm = mainArm;
 
         if (defaultState == null) {
-            this.currentStateId = ArmState.IDLE;
+            this.currentStateId = ArmState.Idle;
         } else {
             this.currentStateId = defaultState;
         }
     }
 
     public void runPeriodic() {
-        ArmAction currentAction = ArmController.states.get(this.currentStateId);
+        ArmAction currentAction = getCurrentAction();
         if (currentAction == null) {
             throw new RuntimeException("Attempted to run action with no corresponding action id");
         }
 
-        ArmState newStateId = currentAction.run(this.MainArm, this);
-        if (newStateId != null) {
-            this.currentStateId = newStateId;
+        ArmActionResult result = currentAction.run(this.mainArm);
+        if (this.queuedState == null) {
+            if (result != null) {
+                if (result.isChanged()) {
+                    long delay = result.getDelay();
+                    if (delay != 0) {
+                        this.queuedState = result.getState();
+                        this.queuedTime = System.currentTimeMillis() + delay;
+                    } else {
+                        this.currentStateId = result.getState();
+                    }
+                }
+            }
+        } else {
+            if (System.currentTimeMillis() >= this.queuedTime) {
+                this.currentStateId = this.queuedState;
+                this.queuedState = null;
+                this.queuedTime = 0;
+            }
         }
-
     }
 
     public ArmState getState() {
@@ -93,286 +76,184 @@ public class ArmController {
         this.currentStateId = state;
     }
 
+    public void putDashboard() {
+        SmartDashboard.putString("State", this.getState().toString());
+    }
+
+    private ArmAction getCurrentAction() {
+        return ArmController.states.get(this.currentStateId);
+    }
+
     static {
-        ArmController.states.put(ArmState.IDLE, new ArmAction() {
+        ArmController.states.put(ArmState.Idle, new ArmAction() {
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
+            public ArmActionResult run(ArmWrapper MainArm) {
                 MainArm.analogArm(0);
-                return null;
+
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.HOME, new ArmAction() {
-            private final double EPSILON = 1;
-            private final double HOME_POINT = 0;
+        ArmController.states.put(ArmState.Home, new ArmAction() {
+            private final double HOME_ANGLE = 0.0;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - HOME_POINT;
-                if (Math.abs(differencer) <= EPSILON) {
-                    MainArm.PIDControlArm(HOME_POINT, false);
-                } else {
-                    MainArm.PIDControlArm(HOME_POINT, true);
+            public ArmActionResult run(ArmWrapper MainArm) {
+                if (MainArm.PIDControlArm(HOME_ANGLE)) {
+                    return ArmActionResult.changeTo(ArmState.Idle);
                 }
-                if (Math.abs(differencer) <= EPSILON) {
-                    return ArmState.IDLE;
-                }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.LOW, new ArmAction() {
-            private final double EPSILON = 0.1;
-            private final double LOW_POINT = -20;
+        ArmController.states.put(ArmState.Low, new ArmAction() {
+            private final double LOW_ANGLE = -20;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - LOW_POINT;
-                if (Math.abs(differencer) <= EPSILON) {
-                    MainArm.PIDControlArm(LOW_POINT, false);
-                } else {
-                    MainArm.PIDControlArm(LOW_POINT, true);
+            public ArmActionResult run(ArmWrapper MainArm) {
+                if (MainArm.PIDControlArm(LOW_ANGLE)) {
+                    return ArmActionResult.changeTo(ArmState.Idle);
                 }
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    return ArmState.IDLE;
-                }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.MEDIUM, new ArmAction() {
-            private final double EPSILON = 0.1;
+        ArmController.states.put(ArmState.Medium, new ArmAction() {
             private final double MEDIUM_POINT = -50;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - MEDIUM_POINT;
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    MainArm.PIDControlArm(MEDIUM_POINT, false);
-                } else {
-                    MainArm.PIDControlArm(MEDIUM_POINT, true);
+            public ArmActionResult run(ArmWrapper MainArm) {
+                if (MainArm.PIDControlArm(MEDIUM_POINT)) {
+                    return ArmActionResult.changeTo(ArmState.Idle);
                 }
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    return ArmState.IDLE;
-                }
-                return null;
+                
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.RECALIBRATE, new ArmAction() {
+        ArmController.states.put(ArmState.Recalibrate, new ArmAction() {
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm();
+            public ArmActionResult run(ArmWrapper MainArm) {
+                double differencer = MainArm.getArmAngle();
 
                 MainArm.analogArm(0.1);
                 MainArm.analogCarriage(0.1);
 
-                if (Math.abs(differencer)==0) {
-                    return ArmState.IDLE;
+                if (Math.abs(differencer) == 0.0) {
+                    return ArmActionResult.changeTo(ArmState.Idle);
                 }
-                return ArmState.RECALIBRATE;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.SWEEPSTART, new ArmAction() {
-            private final double EPSILON = 3;
-            private double POINT = -37;
-            private double GPOINT = -5.5;
+        ArmController.states.put(ArmState.SweepStart, new ArmAction() {
+            private double ARM_ANGLE = -37;
+            private double CARRIAGE_ANGLE = -5.5;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleA, 250);
+                }
 
-                if (Math.abs(differencer) <= EPSILON) {
-                    MainArm.PIDControlArm(POINT, false);
-                } else {
-                    MainArm.PIDControlArm(POINT, true);
-                }
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.SWEEPMIDDLE1);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 250);
-                    }
-                    return ArmState.SWEEPSTART;
-                }
-                if (Math.abs(differencer) <= EPSILON) {
-                    MainArm.PIDControlCarriage(GPOINT, false);
-                } else {
-                    MainArm.PIDControlCarriage(GPOINT, true);
-                }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.SWEEPMIDDLE1, new ArmAction() {
-            private final double EPSILON = 3;
-            private double POINT = -28;
-            private double GPOINT = -22;
+        ArmController.states.put(ArmState.SweepMiddleA, new ArmAction() {
+            private double ARM_ANGLE = -28;
+            private double CARRIAGE_ANGLE = -22;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                MainArm.spinIn();
+                
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleB, 1500);
+                }
 
-                // if (Math.abs(differencer) <= EPSILON) {
-                // MainArm.PIDControlArm(POINT, false);
-                // } else {
-                MainArm.PIDControlArm(POINT, true);
-                // }
-                MainArm.PIDControlCarriage(GPOINT, true);
+                return ArmActionResult.noChange();
+            }
+        });
 
+        ArmController.states.put(ArmState.SweepMiddleB, new ArmAction() {
+            private double ARM_ANGLE = -24;
+            private double CARRIAGE_ANGLE = -21.5;
+
+            @Override
+            public ArmActionResult run(ArmWrapper MainArm) {
                 MainArm.spinIn();
 
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.SWEEPMIDDLE2);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 1500);
-                    }
-                    return ArmState.SWEEPMIDDLE1;
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepMiddleC, 1500);
                 }
-                // if (Math.abs(differencer) <= EPSILON) {
-                // MainArm.PIDControlCarriage(GPOINT, false);
-                // } else {
-                // }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.SWEEPMIDDLE2, new ArmAction() {
-            private final double EPSILON = 3;
-            private double POINT = -24;
-            private double GPOINT = -21.5;
+        ArmController.states.put(ArmState.SweepMiddleC, new ArmAction() {
+            private double ARM_ANGLE = -23;
+            private double CARRIAGE_ANGLE = -5.5;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
-
-                    MainArm.PIDControlArm(POINT, true);
-
-                    MainArm.PIDControlCarriage(GPOINT, true);
-
-                    MainArm.spinIn();
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.SWEEPMIDDLE3);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 1500);
-                    }
-                    return ArmState.SWEEPMIDDLE2;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeToAfter(ArmState.SweepFinish, 1500);
                 }
                 return null;
             }
         });
 
-        ArmController.states.put(ArmState.SWEEPMIDDLE3, new ArmAction() {
-            private final double EPSILON = 3;
-            private double POINT = -23;
-            private double GPOINT = -5.5;
+        ArmController.states.put(ArmState.SweepFinish, new ArmAction() {
+            private double ARM_ANGLE = -7;
+            private double CARRIAGE_ANGLE = -5.5;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
-
-                MainArm.PIDControlArm(POINT, true);
-
-                MainArm.PIDControlCarriage(GPOINT, true);
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.SWEEPFINISH);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 1500);
-                    }
-                    return ArmState.SWEEPMIDDLE3;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                // TODO: This needs to be tested, not sure if the pid will fail to keep both close enough to their angles
+                if (MainArm.PIDControlArm(ARM_ANGLE) && MainArm.PIDControlCarriage(CARRIAGE_ANGLE)) {
+                    return ArmActionResult.changeTo(ArmState.Idle);
                 }
                 return null;
             }
         });
 
-        ArmController.states.put(ArmState.SWEEPFINISH, new ArmAction() {
-            private final double EPSILON = 3;
-            private double POINT = -7;
-            private double GPOINT = -5.5;
+        // TODO: THIS
+        ArmController.states.put(ArmState.Extension, new ArmAction(){
+            private double ARM_ANGLE = -7;
+            // private double CARRIAGE_ANGLE = -5.5;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                double differencer = MainArm.getCarriageAngle() - ARM_ANGLE;
 
-                    MainArm.PIDControlArm(POINT, true);
-                
-                    MainArm.PIDControlCarriage(GPOINT, true);
-                
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    return ArmState.IDLE;
+                if (Math.abs(differencer) <= 3.0) {
+                    return ArmActionResult.changeToAfter(ArmState.Dropping, 2000);
                 }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
 
-        ArmController.states.put(ArmState.EXTENSION, new ArmAction(){
-            private final double EPSILON = 3;
-            private double POINT = -7;
-            private double GPOINT = -5.5;
+        // TODO: THIS
+        ArmController.states.put(ArmState.Dropping, new ArmAction(){
+            private double ARM_ANGLE = -7;
+            // private double CARRIAGE_ANGLE = -5.5;
 
             @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleCarriage() - POINT;
+            public ArmActionResult run(ArmWrapper MainArm) {
+                double differencer = MainArm.getArmAngle() - ARM_ANGLE;
 
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.DROPPING);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 2000);
-                    }
-                    return ArmState.EXTENSION;
+                if (Math.abs(differencer) <= 3.0) {
+                    return ArmActionResult.changeToAfter(ArmState.Idle, 2000);
                 }
-                return null;
+                return ArmActionResult.noChange();
             }
         });
-
-        ArmController.states.put(ArmState.EXTENSION, new ArmAction(){
-            private final double EPSILON = 3;
-            private double POINT = -7;
-            private double GPOINT = -5.5;
-
-            @Override
-            public ArmState run(ArmWrapper MainArm, ArmController controller) {
-                double differencer = MainArm.getAngleArm() - POINT;
-
-                if (Math.abs(differencer) <= EPSILON) {
-                    if (!controller.waitingForNextTaskToExecute) {
-                        ScheduleNextStateTask middleState = controller.new ScheduleNextStateTask(ArmState.DROPPING);
-                        controller.waitingForNextTaskToExecute = true;
-                        stateSchedulingTimer.schedule(middleState, 2000);
-                    }
-                    return ArmState.IDLE;
-                }
-                return null;
-            }
-        });
-
-    }
-
-    private class ScheduleNextStateTask extends TimerTask {
-
-        private ArmState nextState; // = ArmState.IDLE;
-
-        public ScheduleNextStateTask(ArmState nextState) {
-            this.nextState = nextState;
-        }
-
-        @Override
-        public void run() {
-            setState(nextState);
-            waitingForNextTaskToExecute = false;
-        }
 
     }
 }

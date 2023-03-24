@@ -1,6 +1,6 @@
 package lib.interfaces;
 
-public interface act { //abstraction is real
+public interface Act { //abstraction is real
     
     /* double num is there if you want it. No need to use it*/
     void action(double num); // what is your action 
