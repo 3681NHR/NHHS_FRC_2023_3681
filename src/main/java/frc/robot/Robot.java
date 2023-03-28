@@ -5,6 +5,7 @@
 package frc.robot;
 
 import lib.Drive;
+//import lib.HID.hidWrapper;
 import lib.interfaces.MotorInterface;
 import lib.motor.SparkWrapper;
 import lib.motor.VictorWrapper;
@@ -130,7 +131,7 @@ public class Robot extends TimedRobot {
     private static final int CONTROLLER_USB_PORT_A = 0;
     private static final int CONTROLLER_USB_PORT_B = 1;
 
-    private static final int BUTTON_PANEL_USB_PORT = 4;
+    private static final int BUTTON_PANEL_USB_PORT = 2;
 
     private static final int LIMIT_SWITCH_PORT_A = 4;
     private static final int LIMIT_SWITCH_PORT_B = 5;
@@ -142,6 +143,7 @@ public class Robot extends TimedRobot {
     XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
     XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
     GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
+    //hidWrapper HID = new hidWrapper(controllerA, controllerB, buttonPanel);
 
     // NOTE: Motors
     MotorInterface frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left");
@@ -170,8 +172,8 @@ public class Robot extends TimedRobot {
     
     // NOTE: Drives / Actors
     ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
+    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
     // NOTE: Raspberry PI interface related variables
@@ -196,7 +198,7 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         armPistonSolenoid.set(kReverse);
-        armController.setState(ArmState.Idle);
+        armController.setState(ArmState.RecalibrateWait);
         MainArm.generalCalibration();
 
     }
@@ -204,12 +206,17 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // NOTE: Reset things
-        armController.setState(ArmState.Idle);
+        //HID.hidCalibrate();
+
+        armController.setState(ArmState.RecalibrateWait);
+
         MainArm.calibrateArm();
         MainArm.calibrateCarriage();
         MainArm.generalCalibration();
+
         gyro.calibrate();
         gyro.reset();
+
         initSolenoid(7, 5, 4, 6); // NOTE: channels for solenoids
         
         System.out.println("Robot Initiated");
@@ -243,7 +250,7 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.RecalibrateWait);
+        armController.setState(ArmState.AutoHigh);
     }
 
     @Override
@@ -276,6 +283,8 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putBoolean("Limit Switch A State", LSA.get());
         SmartDashboard.putBoolean("Limit Switch B State", LSB.get());
+
+        SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
         MainArm.putDashboard();
         
         armController.putDashboard();
@@ -312,16 +321,16 @@ public class Robot extends TimedRobot {
         double forward = 0.0;
         double rotate = 0.0;
         double multiplier = (controllerB.getLeftTriggerAxis() * 0.3) - (controllerB.getRightTriggerAxis() * 0.5);
-        double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
+        double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.7; // (-RightStick.getThrottle() * 0.5) + 0.5;
         
         if (controllerB.getLeftBumper()) {
-            carriageSpeedL = 0.7;
+            carriageSpeedL = 0.9;
         } else {
             carriageSpeedL = 0.01;
         }
 
         if (controllerB.getRightBumper()) {
-            carriageSpeedR = 0.7;
+            carriageSpeedR = 0.9;
         } else {
             carriageSpeedR = 0.01;
         }
@@ -340,23 +349,18 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("R", rotate);
 
         drive.driveCartesian(forward, -strafe, rotate);
-        if (controllerB.getBButtonPressed()) {
-            armController.setState(ArmState.Analog);
-        }
-        if (controllerA.getAButtonPressed()) {
+
+        if (controllerB.getAButtonPressed()) {
             MainArm.spinIn();
             
             StopRollerTask stopRollerTask = new StopRollerTask();
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
         }
-        if (controllerA.getBButtonPressed()) {
+        if (controllerB.getBButtonPressed()) {
             MainArm.spinOut();
             
             StopRollerTask stopRollerTask = new StopRollerTask();
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
-        }
-        if (controllerB.getAButtonPressed()){
-            armController.setState(ArmState.Finish);
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
@@ -365,26 +369,27 @@ public class Robot extends TimedRobot {
         if (controllerB.getXButtonPressed()) {
             armController.setState(ArmState.SweepStart);
         }
-        if (controllerB.getBackButtonPressed()) {
-            armController.setState(ArmState.Home);
+        if (controllerB.getStartButtonPressed()) {
+            handPistonSolenoid.toggle();
+            armPistonSolenoid.toggle();
         }
-        if(controllerB.getStartButton()) {
-                armController.setState(ArmState.RecalibrateWait);
+        if(controllerB.getBackButton()) {
+                armController.setState(ArmState.Analog);
         }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
-        }
+        } 
 
         // position ---------");
-        // int panelJoystickAngle = buttonPanel.getPOV();
-        // boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
-        // boolean button2_pressed = buttonPanel.getRawButtonPressed(2);
-        // boolean button3_pressed = buttonPanel.getRawButtonPressed(3);
-        // boolean button4_pressed = buttonPanel.getRawButtonPressed(4);
-        // boolean button5_pressed = buttonPanel.getRawButtonPressed(5);
-        // boolean button6_pressed = buttonPanel.getRawButtonPressed(6);
-        // boolean button9_pressed = buttonPanel.getRawButtonPressed(9);
-        // boolean switch_flicked = buttonPanel.getRawButtonPressed(10);
+        int panelJoystickAngle = buttonPanel.getPOV();
+        boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
+        boolean button2_pressed = buttonPanel.getRawButtonPressed(2);
+        boolean button3_pressed = buttonPanel.getRawButtonPressed(3);
+        boolean button4_pressed = buttonPanel.getRawButtonPressed(4);
+        boolean button5_pressed = buttonPanel.getRawButtonPressed(5);
+        boolean button6_pressed = buttonPanel.getRawButtonPressed(6);
+        boolean button9_pressed = buttonPanel.getRawButtonPressed(9);
+        boolean switch_flicked = buttonPanel.getRawButtonPressed(10);
 
         // action();
     }
@@ -448,6 +453,13 @@ public class Robot extends TimedRobot {
     //     );
     // }
 
+    public void AutoMove() {
+        drive.driveCartesian(-0.3,0,0);
+    }
+
+    public void AutoMoveCancel() {
+        drive.driveCartesian(0,0,0);
+    }
 
     private class StopRollerTask extends TimerTask {
 

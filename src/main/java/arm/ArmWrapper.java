@@ -99,7 +99,7 @@ public class ArmWrapper {
 
             return FIN_SETPOINT;
         } else if (State == ArmState.High) {
-            FIN_SETPOINT = -22;
+            FIN_SETPOINT = -22.9;
 
             return FIN_SETPOINT;
         } else {
@@ -132,7 +132,7 @@ public class ArmWrapper {
         final double feedForward = carriageFeedForward.calculate(speed);
         double output = carriagePIDController.calculate(getCarriageAngle(), desiredAngle);
 
-        return ((output * 0.1) + (feedForward * 0.1) / 10.0);
+        return -((output * 0.1) + (feedForward * 0.1) / 10.0 * 0);
     }
 
     /**
@@ -181,7 +181,7 @@ public class ArmWrapper {
      * @see CANSparkMax.set()
      */
     public void analogCarriage(double speed) {
-        carriageMotor.set(speed);
+        carriageMotor.set(-speed);
     }
 
     /**
@@ -205,7 +205,7 @@ public class ArmWrapper {
     }
 
     public void generalCalibration(){
-        double rG = 0.0798;
+        double rG = 0.0188;
         carriageEncoder.setDistancePerPulse(rG);
         carriageEncoder.setSamplesToAverage(5);
         carriageEncoder.setMinRate(0.05);
