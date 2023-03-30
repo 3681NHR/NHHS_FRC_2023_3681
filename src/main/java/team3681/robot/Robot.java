@@ -2,9 +2,10 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot;
+package team3681.robot;
 
 import lib.Drive;
+//import lib.HID.hidWrapper;
 import lib.interfaces.MotorInterface;
 import lib.motor.SparkWrapper;
 import lib.motor.VictorWrapper;
@@ -46,16 +47,69 @@ import arm.ArmWrapper;
 import arm.ArmState;
 
 /**
- * The class that makes everything work.
- * @tip Remember: One responsibility for each class
- * 
- * @author Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
+ * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
  * for the 3681 team.
+ * 
+ * This contains all the code for that season. Use it well, i've left plenty of
+ * comments.
  * 
  * @see TimedRobot
  */
 
 public class Robot extends TimedRobot {
+    /*
+     * Little explanation:
+     * SparkWrapper is a wrapper class dedicated to specifically the Rev Robotics
+     * Sparkmax motor controller
+     * Below we are defining the objects frontLeft etc. to their CAN ID (checked
+     * using the rev robotics hardware client)
+     * and Motor Type (brushless or brushed usually)
+     * Then with the Mecanum Drive class we plug in our SparkWrapper objects to
+     * initialize our object "drive".
+     * 
+     * Edit: Use the wrappers instead. Sparkwrapper and Victorwrapper with the
+     * motorinterface interface.
+     * 
+     * The Relative Encoder class is a Rev Robotics specific encoder class used for
+     * the integrated encoders on the NEO brushless motors. (Behaves similarly but
+     * with less setup)
+     * The Encoder class is usually used for non-integrated encoders like our AMT103
+     * Quadrature Encoder (which was a pain to deal with for weeks and weeks and
+     * weeks SCREAMING)
+     * ADIS16448 is our gyro model
+     * FRC is quite compatible with xbox controllers and are fairly straightforward.
+     * Solenoids are pneumatic control valve things and are straightforward (this is
+     * a cue to look up wpilib documentation)
+     * Network Tables is the key to transmitting data over from a R-Pi or jetson and
+     * the like
+     * GenericHID is for our custom state of the art button panel!!! (real and
+     * based)
+     * SimplePID and Feedforward was for PID controllers (look them up, its a
+     * controller not the disease thing redo your search)
+     * Okay anything beyond this, literally hover over the funny looking word and it
+     * will come up with a definition or what values to put in it
+     * 
+     * Important notes:
+     * (!)AVOID USING WHILE LOOPS, THE CODE IS ALWAYS RUNNING ANYWAY
+     * - USING AN UNTESTED WHILE LOOP, WE WERE DISABLED FOR 4 QUAL ROUNDS DURING THE
+     * 3/4/23 FRC GLACIER PEAK EVENT
+     * (!) CHECK CONTINUITY FOR WIRES. IT ISNT ALWAYS YOUR FAULT
+     * - If not continuity, use an oscilloscope to test for data for sensors
+     * The MXI port(the middle one) on the roborio is used for gyros and the like
+     * and it plugs in to all the pins.
+     * (?) If someone who is better than me (likely) comes around these later years,
+     * check out other teams code.
+     * - This code isn't very good. Many other teams have had years of foundation
+     * building on their code. As of 2023, I'd like future team members
+     * - to do similar. Please post everything you do in github, and maybe when I
+     * come back in 5 years, everything will be awesome.
+     * - Check out other teams code on github, especially team 2910 for
+     * command-based programming and team 254 for timed-based similar to ours.
+     * - edit: I have learned so much after looking at other code. My horizons are
+     * broadened.
+     * 
+     */
+
 
     // NOTE: ID Constants, DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING!
     private static final int FRONT_LEFT_WHEEL_CAN_ID = 3;
@@ -77,7 +131,7 @@ public class Robot extends TimedRobot {
     private static final int CONTROLLER_USB_PORT_A = 0;
     private static final int CONTROLLER_USB_PORT_B = 1;
 
-    private static final int BUTTON_PANEL_USB_PORT = 4;
+    private static final int BUTTON_PANEL_USB_PORT = 2;
 
     private static final int LIMIT_SWITCH_PORT_A = 4;
     private static final int LIMIT_SWITCH_PORT_B = 5;
@@ -89,6 +143,7 @@ public class Robot extends TimedRobot {
     XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
     XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
     GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
+    //hidWrapper HID = new hidWrapper(controllerA, controllerB, buttonPanel);
 
     // NOTE: Motors
     MotorInterface frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left");
@@ -117,8 +172,8 @@ public class Robot extends TimedRobot {
     
     // NOTE: Drives / Actors
     ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
+    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
     // NOTE: Raspberry PI interface related variables
@@ -132,6 +187,7 @@ public class Robot extends TimedRobot {
     double z = 0.0; // TODO: Figure this form kp * error
     long Tinit = System.currentTimeMillis()/1000;
 
+
     // NOTE: The heading of the robot when starting the motion
     double heading = 0.0;
     double gyroError = 0.0;
@@ -142,7 +198,7 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         armPistonSolenoid.set(kReverse);
-        armController.setState(ArmState.Idle);
+        armController.setState(ArmState.RecalibrateWait);
         MainArm.generalCalibration();
 
     }
@@ -150,12 +206,17 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // NOTE: Reset things
-        armController.setState(ArmState.Idle);
+        //HID.hidCalibrate();
+
+        armController.setState(ArmState.RecalibrateWait);
+
         MainArm.calibrateArm();
         MainArm.calibrateCarriage();
         MainArm.generalCalibration();
+
         gyro.calibrate();
         gyro.reset();
+
         initSolenoid(7, 5, 4, 6); // NOTE: channels for solenoids
         
         System.out.println("Robot Initiated");
@@ -189,7 +250,7 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.RecalibrateWait);
+        armController.setState(ArmState.AutoHigh);
     }
 
     @Override
@@ -200,6 +261,13 @@ public class Robot extends TimedRobot {
     }
 
     // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC STUFF)================================================
+    public boolean emergencysend() {
+        if (buttonPanel.getRawButton(1)) {
+            return true;
+        } else
+            return false;
+    }
+    
     private void putDashboard() {
         SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
         SmartDashboard.putNumber("Gyro Accel Y", gyro.getAccelY());
@@ -215,6 +283,8 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putBoolean("Limit Switch A State", LSA.get());
         SmartDashboard.putBoolean("Limit Switch B State", LSB.get());
+
+        SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
         MainArm.putDashboard();
         
         armController.putDashboard();
@@ -251,7 +321,7 @@ public class Robot extends TimedRobot {
         double forward = 0.0;
         double rotate = 0.0;
         double multiplier = (controllerB.getLeftTriggerAxis() * 0.3) - (controllerB.getRightTriggerAxis() * 0.5);
-        double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
+        double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.7; // (-RightStick.getThrottle() * 0.5) + 0.5;
         
         switch (controllerB.getLeftBumper() && controllerB.getRightBumper()) {
             case true: //NOTE: While both true, cancel out all movement
@@ -287,6 +357,7 @@ public class Robot extends TimedRobot {
                 break;
         }
 
+
         // NOTE: Joystick direction is opposite
         strafe = bufferJoystickInput(-leftJoystickX * adjuster, INPUT_BUFFER_AMOUNT);
         forward = bufferJoystickInput(-leftJoystickY * adjuster, INPUT_BUFFER_AMOUNT);
@@ -296,23 +367,18 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("R", rotate);
 
         drive.driveCartesian(forward, -strafe, rotate);
-        if (controllerB.getBButtonPressed()) {
-            armController.setState(ArmState.Analog);
-        }
-        if (controllerA.getAButtonPressed()) {
+
+        if (controllerB.getAButtonPressed()) {
             MainArm.spinIn();
             
             StopRollerTask stopRollerTask = new StopRollerTask();
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
         }
-        if (controllerA.getBButtonPressed()) {
+        if (controllerB.getBButtonPressed()) {
             MainArm.spinOut();
             
             StopRollerTask stopRollerTask = new StopRollerTask();
             rollerTimer.schedule(stopRollerTask, 1000); // NOTE: In 2 seconds, run the stop roller task 
-        }
-        if (controllerB.getAButtonPressed()){
-            armController.setState(ArmState.Finish);
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
@@ -321,26 +387,27 @@ public class Robot extends TimedRobot {
         if (controllerB.getXButtonPressed()) {
             armController.setState(ArmState.SweepStart);
         }
-        if (controllerB.getBackButtonPressed()) {
-            armController.setState(ArmState.Home);
+        if (controllerB.getStartButtonPressed()) {
+            handPistonSolenoid.toggle();
+            armPistonSolenoid.toggle();
         }
-        if(controllerB.getStartButton()) {
-                armController.setState(ArmState.RecalibrateWait);
+        if(controllerB.getBackButton()) {
+                armController.setState(ArmState.Analog);
         }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();
-        }
+        } 
 
         // position ---------");
-        // int panelJoystickAngle = buttonPanel.getPOV();
-        // boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
-        // boolean button2_pressed = buttonPanel.getRawButtonPressed(2);
-        // boolean button3_pressed = buttonPanel.getRawButtonPressed(3);
-        // boolean button4_pressed = buttonPanel.getRawButtonPressed(4);
-        // boolean button5_pressed = buttonPanel.getRawButtonPressed(5);
-        // boolean button6_pressed = buttonPanel.getRawButtonPressed(6);
-        // boolean button9_pressed = buttonPanel.getRawButtonPressed(9);
-        // boolean switch_flicked = buttonPanel.getRawButtonPressed(10);
+        int panelJoystickAngle = buttonPanel.getPOV();
+        boolean button1_pressed = buttonPanel.getRawButtonPressed(1);
+        boolean button2_pressed = buttonPanel.getRawButtonPressed(2);
+        boolean button3_pressed = buttonPanel.getRawButtonPressed(3);
+        boolean button4_pressed = buttonPanel.getRawButtonPressed(4);
+        boolean button5_pressed = buttonPanel.getRawButtonPressed(5);
+        boolean button6_pressed = buttonPanel.getRawButtonPressed(6);
+        boolean button9_pressed = buttonPanel.getRawButtonPressed(9);
+        boolean switch_flicked = buttonPanel.getRawButtonPressed(10);
 
         // action();
     }
@@ -404,6 +471,13 @@ public class Robot extends TimedRobot {
     //     );
     // }
 
+    public void AutoMove() {
+        drive.driveCartesian(-0.3,0,0);
+    }
+
+    public void AutoMoveCancel() {
+        drive.driveCartesian(0,0,0);
+    }
 
     private class StopRollerTask extends TimerTask {
 
