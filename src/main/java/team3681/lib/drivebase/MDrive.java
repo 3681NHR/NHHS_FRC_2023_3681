@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package lib;
+package team3681.lib.drivebase;
 
 import static edu.wpi.first.util.ErrorMessages.requireNonNullParam;
 
@@ -18,7 +18,7 @@ import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.drive.RobotDriveBase;
-import lib.interfaces.MotorInterface;
+import team3681.lib.hardware.interfaces.MotorInterface;
 
 /**
  * A class for driving Mecanum drive platforms.
@@ -75,7 +75,7 @@ import lib.interfaces.MotorInterface;
  * drivePolar methods should be called periodically to avoid Motor Safety
  * timeouts.
  */
-public class Drive extends RobotDriveBase implements Sendable, AutoCloseable {
+public class MDrive extends RobotDriveBase implements Sendable, AutoCloseable {
     private static int instances;
 
     private final MotorInterface m_frontLeftMotor;
@@ -129,7 +129,7 @@ public class Drive extends RobotDriveBase implements Sendable, AutoCloseable {
      * @param frontRightMotor The motor on the front-right corner.
      * @param rearRightMotor  The motor on the rear-right corner.
      */
-    public Drive(
+    public MDrive(
             MotorInterface frontLeftMotor,
             MotorInterface rearLeftMotor,
             MotorInterface frontRightMotor,
