@@ -4,11 +4,14 @@
 
 package team3681.robot;
 
-import lib.Drive;
-//import lib.HID.hidWrapper;
-import lib.interfaces.MotorInterface;
-import lib.motor.SparkWrapper;
-import lib.motor.VictorWrapper;
+import team3681.lib.drivebase.MDrive;
+import team3681.lib.hardware.motor.SparkWrapper;
+import team3681.lib.hardware.motor.VictorWrapper;
+import team3681.lib.hardware.interfaces.MotorInterface;
+
+import team3681.robot.arm.ArmController;
+import team3681.robot.arm.ArmState;
+import team3681.robot.arm.ArmWrapper;
 
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -42,9 +45,6 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import arm.ArmController;
-import arm.ArmWrapper;
-import arm.ArmState;
 
 /**
  * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
@@ -172,7 +172,7 @@ public class Robot extends TimedRobot {
     
     // NOTE: Drives / Actors
     ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    Drive drive = new Drive(frontLeft, backLeft, frontRight, backRight);
+    MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
     ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
@@ -323,39 +323,39 @@ public class Robot extends TimedRobot {
         double multiplier = (controllerB.getLeftTriggerAxis() * 0.3) - (controllerB.getRightTriggerAxis() * 0.5);
         double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.7; // (-RightStick.getThrottle() * 0.5) + 0.5;
         
-        switch (controllerB.getLeftBumper() && controllerB.getRightBumper()) {
-            case true: //NOTE: While both true, cancel out all movement
-                carriageSpeedL = 0;
-                carriageSpeedR = 0;
-                break;
+        // switch (controllerB.getLeftBumper() && controllerB.getRightBumper()) {
+        //     case true: //NOTE: While both true, cancel out all movement
+        //         carriageSpeedL = 0;
+        //         carriageSpeedR = 0;
+        //         break;
         
-            case (!controllerB.getLeftBumper()) && (controllerB.getRightBumper()):
-                carriageSpeedL = 0.7;
-                carriageSpeedR = 0;
-                break;
+        //     case (!controllerB.getLeftBumper()) && (controllerB.getRightBumper()):
+        //         carriageSpeedL = 0.7;
+        //         carriageSpeedR = 0;
+        //         break;
         
-            case (controllerB.getLeftBumper()) && (!controllerB.getRightBumper()):
-                carriageSpeedR = 0.7;
-                carriageSpeedL = 0;
-                break;
+        //     case (controllerB.getLeftBumper()) && (!controllerB.getRightBumper()):
+        //         carriageSpeedR = 0.7;
+        //         carriageSpeedL = 0;
+        //         break;
         
-            case false: 
-                carriageSpeedL = 0;
-                carriageSpeedR = 0;
-                break;
+        //     case false: 
+        //         carriageSpeedL = 0;
+        //         carriageSpeedR = 0;
+        //         break;
         
-            default:
-                break;
-        }
+        //     default:
+        //         break;
+        // }
 
-        switch (armController.getState()) {
-            case ArmState.Analog:
-                MainArm.analogCarriage(carriageSpeedL - carriageSpeedR);
-                MainArm.analogArm(multiplier * 2);
-                break;
-            default:
-                break;
-        }
+        // switch (armController.getState()) {
+        //     case Analog:
+        //         MainArm.analogCarriage(carriageSpeedL - carriageSpeedR);
+        //         MainArm.analogArm(multiplier * 2);
+        //         break;
+        //     default:
+        //         break;
+        // }
 
 
         // NOTE: Joystick direction is opposite

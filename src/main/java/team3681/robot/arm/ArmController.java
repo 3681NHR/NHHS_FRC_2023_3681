@@ -1,4 +1,4 @@
-package arm;
+package team3681.robot.arm;
 
 import java.util.HashMap;
 import java.util.Map;

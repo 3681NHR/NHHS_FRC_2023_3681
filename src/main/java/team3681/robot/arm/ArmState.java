@@ -1,4 +1,4 @@
-package arm;
+package team3681.robot.arm;
 
 public enum ArmState {
     Idle,
@@ -26,7 +26,10 @@ public enum ArmState {
     AutoHigh,
     AutoExtensionHigh,
     AutoDropping,
-    AutoReel;
+    AutoReel,
+    AutoRecalibrateWait,
+    AutoRecalibrateStageA,
+    AutoRecalibrateStageB;
 
     public int getId() {
         return this.ordinal();

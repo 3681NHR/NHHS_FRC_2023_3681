@@ -1,4 +1,6 @@
-package main.java.lib.behavior.interfaces;
+package team3681.lib.behavior.interfaces;
+
+import team3681.lib.behavior.Behavior;
 
 public interface BehaviorManager {
     // Method to initialize the behavior manager

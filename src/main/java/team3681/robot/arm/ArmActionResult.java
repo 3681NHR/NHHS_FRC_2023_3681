@@ -1,4 +1,4 @@
-package arm;
+package team3681.robot.arm;
 
 public class ArmActionResult {
     private ArmState state = ArmState.Idle;

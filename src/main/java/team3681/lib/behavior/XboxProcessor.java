@@ -34,7 +34,6 @@ public class XboxProcessor implements inputManager{
         
     }
 
-    @Override
     public void getList() {
         // TODO Auto-generated method stub
         

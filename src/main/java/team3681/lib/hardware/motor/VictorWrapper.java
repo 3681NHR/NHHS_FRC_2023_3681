@@ -1,4 +1,4 @@
-package lib.motor;
+package team3681.lib.hardware.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
@@ -8,14 +8,14 @@ import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.BaseTalonConfiguration;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.REVLibError;
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.wpilibj.DriverStation;
-import lib.interfaces.MotorInterface;
+
+import team3681.lib.hardware.interfaces.MotorInterface;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.ctre.phoenix.motorcontrol.ControlMode;
-
 
 /**
  * This class is a thin wrapper around the VictorSPX that reduces CAN bus / CPU overhead.

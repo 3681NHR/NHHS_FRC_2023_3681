@@ -1,4 +1,4 @@
-package lib.motor;
+package team3681.lib.hardware.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.ParamEnum;
@@ -16,7 +16,7 @@ import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.jni.CANSparkMaxJNI;
 
-import lib.interfaces.MotorInterface;
+import team3681.lib.hardware.interfaces.MotorInterface;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;

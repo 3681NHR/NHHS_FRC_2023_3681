@@ -1,4 +1,4 @@
-package main.java.lib.behavior.interfaces;
+package team3681.lib.behavior.interfaces;
 
 public interface inputManager {
      /**
@@ -11,10 +11,9 @@ public interface inputManager {
      * Method to remove an input device from the manager.
      * @param device the input device to remove.
      */
-    public void removeInputDevice(InputDevice device);
+    public void removeInputDevice(Object device);
 
-    /**
-     * Method to update the input manager and get the latest input values.
+     /** Method to update the input manager and get the latest input values.
      */
     public void update();
 }

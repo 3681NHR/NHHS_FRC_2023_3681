@@ -1,4 +1,4 @@
-package arm;
+package team3681.robot.arm;
 
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -7,7 +7,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
-import lib.interfaces.MotorInterface;
+import team3681.lib.hardware.interfaces.MotorInterface;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
