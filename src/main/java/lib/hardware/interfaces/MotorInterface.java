@@ -8,13 +8,7 @@ import com.ctre.phoenix.motorcontrol.can.BaseTalonConfiguration;
 import edu.wpi.first.wpilibj.RobotController;
 
 /**
- * The base universal interface for all motors
- * some code borrowed from team 1861.
- * thanks to yall I think I was useful to my team.
- * All the best,
- * 3681
- * 
- * Thanks. Genuinely.
+ * Universal interface for all motors.
  */
 public interface MotorInterface extends IMotorControllerEnhanced {
     String getName();

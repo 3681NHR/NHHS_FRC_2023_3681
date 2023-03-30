@@ -40,32 +40,31 @@ public class ArmController {
     }
 
     public void runPeriodic() {
+        long currentTime = System.currentTimeMillis();
         ArmAction currentAction = getCurrentAction();
+        
         if (currentAction == null) {
             throw new RuntimeException("Attempted to run action with no corresponding action id");
         }
-
+        
         ArmActionResult result = currentAction.run(this.mainArm);
-        if (this.queuedState == null) {
-            if (result != null) {
-                if (result.isChanged()) {
-                    long delay = result.getDelay();
-                    if (delay != 0) {
-                        this.queuedState = result.getState();
-                        this.queuedTime = System.currentTimeMillis() + delay;
-                    } else {
-                        this.currentStateId = result.getState();
-                    }
-                }
-            }
-        } else {
-            if (System.currentTimeMillis() >= this.queuedTime) {
+        if (this.queuedState != null) {
+            if (currentTime >= this.queuedTime) {
                 this.currentStateId = this.queuedState;
                 this.queuedState = null;
                 this.queuedTime = 0;
             }
+        } else if (result != null && result.isChanged()) {
+            long delay = result.getDelay();
+            if (delay != 0) {
+                this.queuedState = result.getState();
+                this.queuedTime = currentTime + delay;
+            } else {
+                this.currentStateId = result.getState();
+            }
         }
     }
+    
 
     public ArmState getState() {
         return currentStateId;

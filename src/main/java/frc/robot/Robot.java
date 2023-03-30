@@ -46,69 +46,16 @@ import arm.ArmWrapper;
 import arm.ArmState;
 
 /**
- * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
- * for the 3681 team.
+ * The class that makes everything work.
+ * @tip Remember: One responsibility for each class
  * 
- * This contains all the code for that season. Use it well, i've left plenty of
- * comments.
+ * @author Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
+ * for the 3681 team.
  * 
  * @see TimedRobot
  */
 
 public class Robot extends TimedRobot {
-    /*
-     * Little explanation:
-     * SparkWrapper is a wrapper class dedicated to specifically the Rev Robotics
-     * Sparkmax motor controller
-     * Below we are defining the objects frontLeft etc. to their CAN ID (checked
-     * using the rev robotics hardware client)
-     * and Motor Type (brushless or brushed usually)
-     * Then with the Mecanum Drive class we plug in our SparkWrapper objects to
-     * initialize our object "drive".
-     * 
-     * Edit: Use the wrappers instead. Sparkwrapper and Victorwrapper with the
-     * motorinterface interface.
-     * 
-     * The Relative Encoder class is a Rev Robotics specific encoder class used for
-     * the integrated encoders on the NEO brushless motors. (Behaves similarly but
-     * with less setup)
-     * The Encoder class is usually used for non-integrated encoders like our AMT103
-     * Quadrature Encoder (which was a pain to deal with for weeks and weeks and
-     * weeks SCREAMING)
-     * ADIS16448 is our gyro model
-     * FRC is quite compatible with xbox controllers and are fairly straightforward.
-     * Solenoids are pneumatic control valve things and are straightforward (this is
-     * a cue to look up wpilib documentation)
-     * Network Tables is the key to transmitting data over from a R-Pi or jetson and
-     * the like
-     * GenericHID is for our custom state of the art button panel!!! (real and
-     * based)
-     * SimplePID and Feedforward was for PID controllers (look them up, its a
-     * controller not the disease thing redo your search)
-     * Okay anything beyond this, literally hover over the funny looking word and it
-     * will come up with a definition or what values to put in it
-     * 
-     * Important notes:
-     * (!)AVOID USING WHILE LOOPS, THE CODE IS ALWAYS RUNNING ANYWAY
-     * - USING AN UNTESTED WHILE LOOP, WE WERE DISABLED FOR 4 QUAL ROUNDS DURING THE
-     * 3/4/23 FRC GLACIER PEAK EVENT
-     * (!) CHECK CONTINUITY FOR WIRES. IT ISNT ALWAYS YOUR FAULT
-     * - If not continuity, use an oscilloscope to test for data for sensors
-     * The MXI port(the middle one) on the roborio is used for gyros and the like
-     * and it plugs in to all the pins.
-     * (?) If someone who is better than me (likely) comes around these later years,
-     * check out other teams code.
-     * - This code isn't very good. Many other teams have had years of foundation
-     * building on their code. As of 2023, I'd like future team members
-     * - to do similar. Please post everything you do in github, and maybe when I
-     * come back in 5 years, everything will be awesome.
-     * - Check out other teams code on github, especially team 2910 for
-     * command-based programming and team 254 for timed-based similar to ours.
-     * - edit: I have learned so much after looking at other code. My horizons are
-     * broadened.
-     * 
-     */
-
 
     // NOTE: ID Constants, DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING!
     private static final int FRONT_LEFT_WHEEL_CAN_ID = 3;
@@ -185,7 +132,6 @@ public class Robot extends TimedRobot {
     double z = 0.0; // TODO: Figure this form kp * error
     long Tinit = System.currentTimeMillis()/1000;
 
-
     // NOTE: The heading of the robot when starting the motion
     double heading = 0.0;
     double gyroError = 0.0;
@@ -254,13 +200,6 @@ public class Robot extends TimedRobot {
     }
 
     // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC STUFF)================================================
-    public boolean emergencysend() {
-        if (buttonPanel.getRawButton(1)) {
-            return true;
-        } else
-            return false;
-    }
-    
     private void putDashboard() {
         SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
         SmartDashboard.putNumber("Gyro Accel Y", gyro.getAccelY());
@@ -314,21 +253,38 @@ public class Robot extends TimedRobot {
         double multiplier = (controllerB.getLeftTriggerAxis() * 0.3) - (controllerB.getRightTriggerAxis() * 0.5);
         double adjuster = (-controllerA.getLeftTriggerAxis() * 0.3) + (controllerA.getRightTriggerAxis() * 0.4) + 0.5; // (-RightStick.getThrottle() * 0.5) + 0.5;
         
-        if (controllerB.getLeftBumper()) {
-            carriageSpeedL = 0.7;
-        } else {
-            carriageSpeedL = 0.01;
+        switch (controllerB.getLeftBumper() && controllerB.getRightBumper()) {
+            case true: //NOTE: While both true, cancel out all movement
+                carriageSpeedL = 0;
+                carriageSpeedR = 0;
+                break;
+        
+            case (!controllerB.getLeftBumper()) && (controllerB.getRightBumper()):
+                carriageSpeedL = 0.7;
+                carriageSpeedR = 0;
+                break;
+        
+            case (controllerB.getLeftBumper()) && (!controllerB.getRightBumper()):
+                carriageSpeedR = 0.7;
+                carriageSpeedL = 0;
+                break;
+        
+            case false: 
+                carriageSpeedL = 0;
+                carriageSpeedR = 0;
+                break;
+        
+            default:
+                break;
         }
 
-        if (controllerB.getRightBumper()) {
-            carriageSpeedR = 0.7;
-        } else {
-            carriageSpeedR = 0.01;
-        }
-
-        if (armController.getState() == ArmState.Analog) {
-        MainArm.analogCarriage(carriageSpeedL-carriageSpeedR);
-        MainArm.analogArm(multiplier*2);
+        switch (armController.getState()) {
+            case ArmState.Analog:
+                MainArm.analogCarriage(carriageSpeedL - carriageSpeedR);
+                MainArm.analogArm(multiplier * 2);
+                break;
+            default:
+                break;
         }
 
         // NOTE: Joystick direction is opposite
