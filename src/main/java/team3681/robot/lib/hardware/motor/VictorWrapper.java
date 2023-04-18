@@ -1,4 +1,4 @@
-package team3681.lib.hardware.motor;
+package team3681.robot.lib.hardware.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
@@ -12,8 +12,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.wpilibj.DriverStation;
-
-import team3681.lib.hardware.interfaces.MotorInterface;
+import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,10 +20,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This class is a thin wrapper around the VictorSPX that reduces CAN bus / CPU overhead.
  * Connects with CTRE VictorSPX motor controllers and adapts it for the universal IGreenMotor.
  *
- * @see MotorInterface
+ * @see UniversalMotor
  * @see VictorSPX
  */
-public class VictorWrapper extends VictorSPX implements MotorInterface {
+public class VictorWrapper extends VictorSPX implements UniversalMotor {
     double m_setpoint = 0;
 
     protected String name = "";
@@ -119,7 +118,7 @@ public class VictorWrapper extends VictorSPX implements MotorInterface {
         return ErrorCode.OK;
     }
 
-    public void set2(double speed) {
+    public void setVolt(double speed) {
         throwIfClosed();
         // Only for 'get' API
         m_setpoint = speed;

@@ -1,4 +1,4 @@
-package team3681.lib.hardware.motor;
+package team3681.robot.lib.hardware.motor;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.ParamEnum;
@@ -16,7 +16,7 @@ import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.jni.CANSparkMaxJNI;
 
-import team3681.lib.hardware.interfaces.MotorInterface;
+import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -27,14 +27,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  *
  * A wrapper for the sparkmax
+ * 
  * @param ControlMode
- * @param DeviceID (CAN)
+ * @param DeviceID    (CAN)
  *
- * @see MotorInterface
+ * @see UniversalMotor
  * @see CANSparkMax
- * @see ControlMode 
+ * @see ControlMode
  */
-public class SparkWrapper implements MotorInterface {
+public class SparkWrapper implements UniversalMotor {
     protected final long sparkMaxHandle;
 
     private CANSparkMax motor;
@@ -49,25 +50,42 @@ public class SparkWrapper implements MotorInterface {
 
     protected void throwIfClosed() {
         if (isClosed.get()) {
-          throw new IllegalStateException("This SPARK MAX object has previously been closed.");
+            throw new IllegalStateException("This SPARK MAX object has previously been closed.");
         }
-      }
+    }
+
     /**
-     *
+     * motorType false = brushed
+     * <p> gonna be real, thats kinda dumb. Someone can rewrite later.
+     * 
      * @param deviceNumber (CAN)
      * @param motorName
      * 
-     * @see MotorInterface
+     * @see UniversalMotor
      * @see CANSparkMax
      *
      */
-    public SparkWrapper(int deviceNumber, String motorName) {
-        motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
+    public SparkWrapper(int deviceNumber, String motorName, boolean motorType) {
+        brushSet(deviceNumber, motorType);
         motor.setIdleMode(IdleMode.kBrake);
         sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(deviceNumber, 1);
         pidController = motor.getPIDController();
         encoder = motor.getEncoder();
         name = motorName;
+    }
+
+    /**
+     * motorType false = brushed
+     * 
+     * @param deviceNumber
+     * @param motorType
+     */
+    public void brushSet(int deviceNumber, boolean motorType) {
+        if (motorType = false) {
+            motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushed);
+        } else { // NOTE: Default, whether
+            motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
+        }
     }
 
     @Override
@@ -76,24 +94,23 @@ public class SparkWrapper implements MotorInterface {
     }
 
     @Override
-    public void stopMotor(ControlMode mode){
+    public void stopMotor(ControlMode mode) {
         throwIfClosed();
         canMaxSet(mode, 0);
     }
 
     @Override
-  public double get() {
-    throwIfClosed();
-    return m_setpoint;
-  }
-    
+    public double get() {
+        throwIfClosed();
+        return m_setpoint;
+    }
+
     @Override
     public void set(
-        ControlMode mode,
-        double demand0,
-        DemandType demand1Type,
-        double demand1
-    ) {
+            ControlMode mode,
+            double demand0,
+            DemandType demand1Type,
+            double demand1) {
         canMaxSet(mode, demand0);
     }
 
@@ -141,9 +158,8 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configClosedloopRamp(
-        double secondsFromNeutralToFull,
-        int timeoutMs
-    ) {
+            double secondsFromNeutralToFull,
+            int timeoutMs) {
         motor.setClosedLoopRampRate(secondsFromNeutralToFull);
         return ErrorCode.OK;
     }
@@ -180,9 +196,8 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configVoltageMeasurementFilter(
-        int filterWindowSamples,
-        int timeoutMs
-    ) {
+            int filterWindowSamples,
+            int timeoutMs) {
         return null;
     }
 
@@ -212,56 +227,50 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configSelectedFeedbackSensor(
-        RemoteFeedbackDevice feedbackDevice,
-        int pidIdx,
-        int timeoutMs
-    ) {
+            RemoteFeedbackDevice feedbackDevice,
+            int pidIdx,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configSelectedFeedbackCoefficient(
-        double coefficient,
-        int pidIdx,
-        int timeoutMs
-    ) {
+            double coefficient,
+            int pidIdx,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configRemoteFeedbackFilter(
-        int deviceID,
-        RemoteSensorSource remoteSensorSource,
-        int remoteOrdinal,
-        int timeoutMs
-    ) {
+            int deviceID,
+            RemoteSensorSource remoteSensorSource,
+            int remoteOrdinal,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configRemoteFeedbackFilter(
-        CANCoder canCoderRef,
-        int remoteOrdinal,
-        int timeoutMs
-    ) {
+            CANCoder canCoderRef,
+            int remoteOrdinal,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configRemoteFeedbackFilter(
-        BaseTalon talonRef,
-        int remoteOrdinal,
-        int timeoutMs
-    ) {
+            BaseTalon talonRef,
+            int remoteOrdinal,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configSensorTerm(
-        SensorTerm sensorTerm,
-        FeedbackDevice feedbackDevice,
-        int timeoutMs
-    ) {
+            SensorTerm sensorTerm,
+            FeedbackDevice feedbackDevice,
+            int timeoutMs) {
         return null;
     }
 
@@ -269,7 +278,8 @@ public class SparkWrapper implements MotorInterface {
     public double getSelectedSensorPosition(int pidIdx) {
         return encoder.getPosition();
     } // native position value
-            // 3681 comment: man I think I understand code now              3/21/23 
+      // 3681 comment: man I think I understand code now 3/21/23
+
     @Override
     public double getSelectedSensorVelocity(int pidIdx) {
         return encoder.getVelocity();
@@ -277,10 +287,9 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode setSelectedSensorPosition(
-        double sensorPos,
-        int pidIdx,
-        int timeoutMs
-    ) {
+            double sensorPos,
+            int pidIdx,
+            int timeoutMs) {
         encoder.setPosition(sensorPos);
         return ErrorCode.OK;
     }
@@ -292,10 +301,9 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode setStatusFramePeriod(
-        StatusFrame frame,
-        int periodMs,
-        int timeoutMs
-    ) {
+            StatusFrame frame,
+            int periodMs,
+            int timeoutMs) {
         return null;
     }
 
@@ -306,21 +314,19 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configForwardLimitSwitchSource(
-        RemoteLimitSwitchSource type,
-        LimitSwitchNormal normalOpenOrClose,
-        int deviceID,
-        int timeoutMs
-    ) {
+            RemoteLimitSwitchSource type,
+            LimitSwitchNormal normalOpenOrClose,
+            int deviceID,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configReverseLimitSwitchSource(
-        RemoteLimitSwitchSource type,
-        LimitSwitchNormal normalOpenOrClose,
-        int deviceID,
-        int timeoutMs
-    ) {
+            RemoteLimitSwitchSource type,
+            LimitSwitchNormal normalOpenOrClose,
+            int deviceID,
+            int timeoutMs) {
         return null;
     }
 
@@ -330,17 +336,15 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configForwardSoftLimitThreshold(
-        double forwardSensorLimit,
-        int timeoutMs
-    ) {
+            double forwardSensorLimit,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configReverseSoftLimitThreshold(
-        double reverseSensorLimit,
-        int timeoutMs
-    ) {
+            double reverseSensorLimit,
+            int timeoutMs) {
         return null;
     }
 
@@ -389,28 +393,25 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configAllowableClosedloopError(
-        int slotIdx,
-        double allowableCloseLoopError,
-        int timeoutMs
-    ) {
+            int slotIdx,
+            double allowableCloseLoopError,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configMaxIntegralAccumulator(
-        int slotIdx,
-        double iaccum,
-        int timeoutMs
-    ) {
+            int slotIdx,
+            double iaccum,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configClosedLoopPeakOutput(
-        int slotIdx,
-        double percentOut,
-        int timeoutMs
-    ) {
+            int slotIdx,
+            double percentOut,
+            int timeoutMs) {
         return null;
     }
 
@@ -465,17 +466,15 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configMotionCruiseVelocity(
-        double sensorUnitsPer100ms,
-        int timeoutMs
-    ) {
+            double sensorUnitsPer100ms,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configMotionAcceleration(
-        double sensorUnitsPer100msPerSec,
-        int timeoutMs
-    ) {
+            double sensorUnitsPer100msPerSec,
+            int timeoutMs) {
         return null;
     }
 
@@ -486,9 +485,8 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configMotionProfileTrajectoryPeriod(
-        int baseTrajDurationMs,
-        int timeoutMs
-    ) {
+            int baseTrajDurationMs,
+            int timeoutMs) {
         return null;
     }
 
@@ -573,23 +571,21 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configSetParameter(
-        ParamEnum param,
-        double value,
-        int subValue,
-        int ordinal,
-        int timeoutMs
-    ) {
+            ParamEnum param,
+            double value,
+            int subValue,
+            int ordinal,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configSetParameter(
-        int param,
-        double value,
-        int subValue,
-        int ordinal,
-        int timeoutMs
-    ) {
+            int param,
+            double value,
+            int subValue,
+            int ordinal,
+            int timeoutMs) {
         return null;
     }
 
@@ -636,28 +632,25 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configSelectedFeedbackSensor(
-        FeedbackDevice feedbackDevice,
-        int pidIdx,
-        int timeoutMs
-    ) {
+            FeedbackDevice feedbackDevice,
+            int pidIdx,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configSupplyCurrentLimit(
-        SupplyCurrentLimitConfiguration currLimitCfg,
-        int timeoutMs
-    ) {
+            SupplyCurrentLimitConfiguration currLimitCfg,
+            int timeoutMs) {
         motor.setSmartCurrentLimit((int) currLimitCfg.currentLimit);
         return ErrorCode.OK;
     }
 
     @Override
     public ErrorCode setStatusFramePeriod(
-        StatusFrameEnhanced frame,
-        int periodMs,
-        int timeoutMs
-    ) {
+            StatusFrameEnhanced frame,
+            int periodMs,
+            int timeoutMs) {
         return null;
     }
 
@@ -668,17 +661,18 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configVelocityMeasurementPeriod(
-        SensorVelocityMeasPeriod period,
-        int timeoutMs
-    ) {
+            SensorVelocityMeasPeriod period,
+            int timeoutMs) {
         return null;
     }
 
+    /**
+     * @deprecated
+     */
     @Override
     public ErrorCode configVelocityMeasurementPeriod(
-        VelocityMeasPeriod period,
-        int timeoutMs
-    ) {
+            VelocityMeasPeriod period,
+            int timeoutMs) {
         return null;
     }
 
@@ -689,19 +683,17 @@ public class SparkWrapper implements MotorInterface {
 
     @Override
     public ErrorCode configForwardLimitSwitchSource(
-        LimitSwitchSource type,
-        LimitSwitchNormal normalOpenOrClose,
-        int timeoutMs
-    ) {
+            LimitSwitchSource type,
+            LimitSwitchNormal normalOpenOrClose,
+            int timeoutMs) {
         return null;
     }
 
     @Override
     public ErrorCode configReverseLimitSwitchSource(
-        LimitSwitchSource type,
-        LimitSwitchNormal normalOpenOrClose,
-        int timeoutMs
-    ) {
+            LimitSwitchSource type,
+            LimitSwitchNormal normalOpenOrClose,
+            int timeoutMs) {
         return null;
     }
 
@@ -714,7 +706,7 @@ public class SparkWrapper implements MotorInterface {
         motor.follow(((SparkWrapper) masterToFollow).getMotor());
     }
 
-    public void follow(MotorInterface masterToFollow, boolean inverted) {
+    public void follow(UniversalMotor masterToFollow, boolean inverted) {
         motor.follow(((SparkWrapper) masterToFollow).getMotor(), inverted);
     }
 
@@ -741,34 +733,33 @@ public class SparkWrapper implements MotorInterface {
     @Override
     public ErrorCode configFactoryDefault(int timeoutMs) {
         System.out.println(
-            "WARNING: configFactoryDefault not working for sparkMax motors!"
-        );
+                "WARNING: configFactoryDefault not working for sparkMax motors!");
         return ErrorCode.OK;
     }
 
     @Override
-    public void set2(double speed) {
+    public void setVolt(double speed) {
         throwIfClosed();
         // Only for 'get' API
         m_setpoint = speed;
-        setpointCommand(speed, ControlType.kDutyCycle, 1, 0 ,0);
+        setpointCommand(speed, ControlType.kDutyCycle, 1, 0, 0);
     }
 
     REVLibError setpointCommand(
-      double value,
-      CANSparkMax.ControlType ctrl,
-      int pidSlot,
-      double arbFeedforward,
-      int arbFFUnits) {
-    throwIfClosed();
-    return REVLibError.fromInt(
-        CANSparkMaxJNI.c_SparkMax_SetpointCommand(
-            sparkMaxHandle,
-            (float) value,
-            ctrl.value,
-            pidSlot,
-            (float) arbFeedforward,
-            arbFFUnits));
-  }
-    
+            double value,
+            CANSparkMax.ControlType ctrl,
+            int pidSlot,
+            double arbFeedforward,
+            int arbFFUnits) {
+        throwIfClosed();
+        return REVLibError.fromInt(
+                CANSparkMaxJNI.c_SparkMax_SetpointCommand(
+                        sparkMaxHandle,
+                        (float) value,
+                        ctrl.value,
+                        pidSlot,
+                        (float) arbFeedforward,
+                        arbFFUnits));
+    }
+
 }

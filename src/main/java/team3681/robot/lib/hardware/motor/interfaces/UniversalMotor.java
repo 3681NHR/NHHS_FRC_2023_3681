@@ -1,4 +1,4 @@
-package team3681.lib.hardware.interfaces;
+package team3681.robot.lib.hardware.motor.interfaces;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.RobotController;
 /**
  * Universal interface for all motors.
  */
-public interface MotorInterface extends IMotorControllerEnhanced {
+public interface UniversalMotor extends IMotorControllerEnhanced {
     String getName();
 
     ErrorCode configAllSettings(BaseTalonConfiguration allConfigs, int timeoutMs);
@@ -28,7 +28,7 @@ public interface MotorInterface extends IMotorControllerEnhanced {
      *
      * @param speed The speed to set. Value should be between -1.0 and 1.0.
      */
-    void set2(double speed);
+    void setVolt(double speed);
 
     /**
      * Sets the voltage output of the MotorController. Compensates for the current
@@ -48,7 +48,7 @@ public interface MotorInterface extends IMotorControllerEnhanced {
      * @param outputVolts The voltage to output.
      */
     default void setVoltage(double outputVolts) {
-        set2(outputVolts / RobotController.getBatteryVoltage());
+        setVolt(outputVolts / RobotController.getBatteryVoltage());
     }
 
 }

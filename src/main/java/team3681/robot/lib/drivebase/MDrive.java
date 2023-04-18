@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package team3681.lib.drivebase;
+package team3681.robot.lib.drivebase;
 
 import static edu.wpi.first.util.ErrorMessages.requireNonNullParam;
 
@@ -18,7 +18,7 @@ import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.util.sendable.SendableRegistry;
 import edu.wpi.first.wpilibj.drive.RobotDriveBase;
-import team3681.lib.hardware.interfaces.MotorInterface;
+import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 
 /**
  * A class for driving Mecanum drive platforms.
@@ -78,10 +78,10 @@ import team3681.lib.hardware.interfaces.MotorInterface;
 public class MDrive extends RobotDriveBase implements Sendable, AutoCloseable {
     private static int instances;
 
-    private final MotorInterface m_frontLeftMotor;
-    private final MotorInterface m_rearLeftMotor;
-    private final MotorInterface m_frontRightMotor;
-    private final MotorInterface m_rearRightMotor;
+    private final UniversalMotor m_frontLeftMotor;
+    private final UniversalMotor m_rearLeftMotor;
+    private final UniversalMotor m_frontRightMotor;
+    private final UniversalMotor m_rearRightMotor;
 
     private boolean m_reported;
 
@@ -130,10 +130,10 @@ public class MDrive extends RobotDriveBase implements Sendable, AutoCloseable {
      * @param rearRightMotor  The motor on the rear-right corner.
      */
     public MDrive(
-            MotorInterface frontLeftMotor,
-            MotorInterface rearLeftMotor,
-            MotorInterface frontRightMotor,
-            MotorInterface rearRightMotor) {
+            UniversalMotor frontLeftMotor,
+            UniversalMotor rearLeftMotor,
+            UniversalMotor frontRightMotor,
+            UniversalMotor rearRightMotor) {
         requireNonNullParam(frontLeftMotor, "frontLeftMotor", "MecanumDrive");
         requireNonNullParam(rearLeftMotor, "rearLeftMotor", "MecanumDrive");
         requireNonNullParam(frontRightMotor, "frontRightMotor", "MecanumDrive");
@@ -207,10 +207,10 @@ public class MDrive extends RobotDriveBase implements Sendable, AutoCloseable {
 
         var speeds = driveCartesianIK(xSpeed, ySpeed, zRotation, gyroAngle);
 
-        m_frontLeftMotor.set2(speeds.frontLeft * m_maxOutput);
-        m_frontRightMotor.set2(speeds.frontRight * m_maxOutput * -1);
-        m_rearLeftMotor.set2(speeds.rearLeft * m_maxOutput);
-        m_rearRightMotor.set2(speeds.rearRight * m_maxOutput * -1); // TODO: a little trolling
+        m_frontLeftMotor.setVolt(speeds.frontLeft * m_maxOutput);
+        m_frontRightMotor.setVolt(speeds.frontRight * m_maxOutput * -1);
+        m_rearLeftMotor.setVolt(speeds.rearLeft * m_maxOutput);
+        m_rearRightMotor.setVolt(speeds.rearRight * m_maxOutput * -1); // TODO: a little trolling
 
         feed();
     }
@@ -325,15 +325,15 @@ public class MDrive extends RobotDriveBase implements Sendable, AutoCloseable {
         builder.setActuator(true);
         builder.setSafeState(this::stopMotor);
         builder.addDoubleProperty(
-                "Front Left Motor Speed", m_frontLeftMotor::get, m_frontLeftMotor::set2);
+                "Front Left Motor Speed", m_frontLeftMotor::get, m_frontLeftMotor::setVolt);
         builder.addDoubleProperty(
                 "Front Right Motor Speed",
                 () -> m_frontRightMotor.get(),
-                value -> m_frontRightMotor.set2(value));
-        builder.addDoubleProperty("Rear Left Motor Speed", m_rearLeftMotor::get, m_rearLeftMotor::set2);
+                value -> m_frontRightMotor.setVolt(value));
+        builder.addDoubleProperty("Rear Left Motor Speed", m_rearLeftMotor::get, m_rearLeftMotor::setVolt);
         builder.addDoubleProperty(
                 "Rear Right Motor Speed",
                 () -> m_rearRightMotor.get(),
-                value -> m_rearRightMotor.set2(value));
+                value -> m_rearRightMotor.setVolt(value));
     }
 }

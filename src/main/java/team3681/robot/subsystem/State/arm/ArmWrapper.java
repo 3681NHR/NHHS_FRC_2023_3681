@@ -1,27 +1,26 @@
-package team3681.robot.arm;
+package team3681.robot.subsystem.State.arm;
 
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
-import team3681.lib.hardware.interfaces.MotorInterface;
-
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMax.IdleMode;
-
+/**
+ * Class exclusively made for the 2023 year.
+ */
 public class ArmWrapper {
     private static double EPSILON = 3.0;
 
     private Encoder armEncoder;
     private Encoder carriageEncoder;
-    private MotorInterface armMotor;
-    private CANSparkMax carriageMotor;
+    private UniversalMotor armMotor;
+    private UniversalMotor carriageMotor;
 
-    private MotorInterface spinnerA;
-    private MotorInterface spinnerB;
+    private UniversalMotor spinnerA;
+    private UniversalMotor spinnerB;
 
     static final SimpleMotorFeedforward rotatingArmFeedForward = new SimpleMotorFeedforward(0.38123, 0.07469);
     static final PIDController rotatingArmPIDController = new PIDController(2.0, 0.0, 0.10);
@@ -39,8 +38,8 @@ public class ArmWrapper {
      * 
      * @see ArmController
      */
-    public ArmWrapper(Encoder armEncoder, Encoder carriageEncoder, MotorInterface armMotor, CANSparkMax carriageMotor,
-            MotorInterface spinnerA, MotorInterface spinnerB) {
+    public ArmWrapper(Encoder armEncoder, Encoder carriageEncoder, UniversalMotor armMotor, UniversalMotor carriageMotor,
+            UniversalMotor spinnerA, UniversalMotor spinnerB) {
         this.armEncoder = armEncoder;
         this.carriageEncoder = carriageEncoder;
         this.armMotor = armMotor;
@@ -80,7 +79,7 @@ public class ArmWrapper {
     public void terminateArm(){
         armMotor.setVoltage(0);
         armMotor.set(ControlMode.PercentOutput, 0);
-        armMotor.set2(0);
+        armMotor.setVolt(0);
     }
 
     public void terminateCarriage(){
@@ -110,8 +109,8 @@ public class ArmWrapper {
     /**
      * @return the output for the PID's
      */
-    public double getPIDout(double desiredAngle) {
-        double differencer = getArmAngle() - desiredAngle;
+    public double getPIDout(double desiredAngle) { //
+        double differencer = getArmAngle() - desiredAngle; 
 
         double speed = -(differencer / Math.abs(differencer));
 
@@ -140,9 +139,11 @@ public class ArmWrapper {
      * 
      * @param desiredAngle
      */
-    public boolean PIDControlArm(double desiredAngle) {
+
+     // robpt.java PIDControlArm(-60)
+    public boolean PIDControlArm(double desiredAngle) { //
         double difference = getArmAngle() - desiredAngle;
-        armMotor.set2(getPIDout(desiredAngle));
+        armMotor.setVolt(getPIDout(desiredAngle));
 
         if (Math.abs(difference) <= EPSILON) {
             return true;
@@ -155,7 +156,7 @@ public class ArmWrapper {
     }
 
     public boolean PIDControlCarriage(double desiredAngle) {
-        carriageMotor.set(getPIDoutG(desiredAngle));
+        carriageMotor.setVolt(getPIDoutG(desiredAngle));
 
         // NOTE: 0.0001 is added to ensure the carriage is kept up opposing gravity
 
@@ -181,7 +182,7 @@ public class ArmWrapper {
      * @see CANSparkMax.set()
      */
     public void analogCarriage(double speed) {
-        carriageMotor.set(speed);
+        carriageMotor.setVolt(speed);
     }
 
     /**
@@ -209,7 +210,6 @@ public class ArmWrapper {
         carriageEncoder.setDistancePerPulse(rG);
         carriageEncoder.setSamplesToAverage(5);
         carriageEncoder.setMinRate(0.05);
-        carriageMotor.setIdleMode(IdleMode.kBrake);
 
         double rA = 360.0 / 2048.0;
         armEncoder.setDistancePerPulse(rA);
@@ -217,14 +217,16 @@ public class ArmWrapper {
         armEncoder.setMinRate(0.05);
     }
 
+    private final static double ABRITRARY_NUMBER = 0.8;
+
     public void spinOut() {
-        spinnerA.set(ControlMode.PercentOutput, 0.8);
-        spinnerB.set(ControlMode.PercentOutput, 0.8);
+        spinnerA.set(ControlMode.PercentOutput, ABRITRARY_NUMBER);
+        spinnerB.set(ControlMode.PercentOutput, ABRITRARY_NUMBER);
     }
 
     public void spinIn() {
-        spinnerA.set(ControlMode.PercentOutput, -0.8);
-        spinnerB.set(ControlMode.PercentOutput, -0.8);
+        spinnerA.set(ControlMode.PercentOutput, -ABRITRARY_NUMBER);
+        spinnerB.set(ControlMode.PercentOutput, -ABRITRARY_NUMBER);
     }
 
     public void spinStop(){

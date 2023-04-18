@@ -1,4 +1,4 @@
-package team3681.robot.arm;
+package team3681.robot.subsystem.State.arm;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,34 +38,6 @@ public class ArmController {
         }
     }
 
-    // public void runPeriodic() {
-    //     ArmAction currentAction = getCurrentAction();
-    //     if (currentAction == null) {
-    //         throw new RuntimeException("Attempted to run action with no corresponding action id");
-    //     }
-
-    //     ArmActionResult result = currentAction.run(this.mainArm);
-    //     if (this.queuedState == null) {
-    //         if (result != null) {
-    //             if (result.isChanged()) {
-    //                 long delay = result.getDelay();
-    //                 if (delay != 0) {
-    //                     this.queuedState = result.getState();
-    //                     this.queuedTime = System.currentTimeMillis() + delay;
-    //                 } else {
-    //                     this.currentStateId = result.getState();
-    //                 }
-    //             }
-    //         }
-    //     } else {
-    //         if (System.currentTimeMillis() >= this.queuedTime) {
-    //             this.currentStateId = this.queuedState;
-    //             this.queuedState = null;
-    //             this.queuedTime = 0;
-    //         }
-    //     }
-    // }
-
     public void runPeriodic() {
         long currentTime = System.currentTimeMillis();
         ArmAction currentAction = getCurrentAction();
@@ -89,6 +61,8 @@ public class ArmController {
             } else {
                 this.currentStateId = result.getState();
             }
+        } else {
+            throw new RuntimeException("Attempted to run action with null result");
         }
     }
 

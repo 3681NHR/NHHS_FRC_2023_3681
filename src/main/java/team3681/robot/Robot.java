@@ -4,15 +4,13 @@
 
 package team3681.robot;
 
-import team3681.lib.drivebase.MDrive;
-import team3681.lib.hardware.motor.SparkWrapper;
-import team3681.lib.hardware.motor.VictorWrapper;
-import team3681.lib.hardware.interfaces.MotorInterface;
-
-import team3681.robot.arm.ArmController;
-import team3681.robot.arm.ArmState;
-import team3681.robot.arm.ArmWrapper;
-
+import team3681.robot.lib.drivebase.MDrive;
+import team3681.robot.lib.hardware.motor.SparkWrapper;
+import team3681.robot.lib.hardware.motor.VictorWrapper;
+import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
+import team3681.robot.subsystem.State.arm.ArmController;
+import team3681.robot.subsystem.State.arm.ArmState;
+import team3681.robot.subsystem.State.arm.ArmWrapper;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.ADIS16448_IMU;
@@ -42,74 +40,17 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 // import com.pathplanner.lib.PathPoint;
 
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
 
 
 /**
- * Originally created by DJ (DANIEL JAYLEN) during the 2023 season for FRC
- * for the 3681 team.
+ * 3681 Robot - all functional code is in RobotContainer
  * 
- * This contains all the code for that season. Use it well, i've left plenty of
- * comments.
- * 
+ * @see RobotContainer 
  * @see TimedRobot
  */
 
 public class Robot extends TimedRobot {
-    /*
-     * Little explanation:
-     * SparkWrapper is a wrapper class dedicated to specifically the Rev Robotics
-     * Sparkmax motor controller
-     * Below we are defining the objects frontLeft etc. to their CAN ID (checked
-     * using the rev robotics hardware client)
-     * and Motor Type (brushless or brushed usually)
-     * Then with the Mecanum Drive class we plug in our SparkWrapper objects to
-     * initialize our object "drive".
-     * 
-     * Edit: Use the wrappers instead. Sparkwrapper and Victorwrapper with the
-     * motorinterface interface.
-     * 
-     * The Relative Encoder class is a Rev Robotics specific encoder class used for
-     * the integrated encoders on the NEO brushless motors. (Behaves similarly but
-     * with less setup)
-     * The Encoder class is usually used for non-integrated encoders like our AMT103
-     * Quadrature Encoder (which was a pain to deal with for weeks and weeks and
-     * weeks SCREAMING)
-     * ADIS16448 is our gyro model
-     * FRC is quite compatible with xbox controllers and are fairly straightforward.
-     * Solenoids are pneumatic control valve things and are straightforward (this is
-     * a cue to look up wpilib documentation)
-     * Network Tables is the key to transmitting data over from a R-Pi or jetson and
-     * the like
-     * GenericHID is for our custom state of the art button panel!!! (real and
-     * based)
-     * SimplePID and Feedforward was for PID controllers (look them up, its a
-     * controller not the disease thing redo your search)
-     * Okay anything beyond this, literally hover over the funny looking word and it
-     * will come up with a definition or what values to put in it
-     * 
-     * Important notes:
-     * (!)AVOID USING WHILE LOOPS, THE CODE IS ALWAYS RUNNING ANYWAY
-     * - USING AN UNTESTED WHILE LOOP, WE WERE DISABLED FOR 4 QUAL ROUNDS DURING THE
-     * 3/4/23 FRC GLACIER PEAK EVENT
-     * (!) CHECK CONTINUITY FOR WIRES. IT ISNT ALWAYS YOUR FAULT
-     * - If not continuity, use an oscilloscope to test for data for sensors
-     * The MXI port(the middle one) on the roborio is used for gyros and the like
-     * and it plugs in to all the pins.
-     * (?) If someone who is better than me (likely) comes around these later years,
-     * check out other teams code.
-     * - This code isn't very good. Many other teams have had years of foundation
-     * building on their code. As of 2023, I'd like future team members
-     * - to do similar. Please post everything you do in github, and maybe when I
-     * come back in 5 years, everything will be awesome.
-     * - Check out other teams code on github, especially team 2910 for
-     * command-based programming and team 254 for timed-based similar to ours.
-     * - edit: I have learned so much after looking at other code. My horizons are
-     * broadened.
-     * 
-     */
-
 
     // NOTE: ID Constants, DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING!
     private static final int FRONT_LEFT_WHEEL_CAN_ID = 3;
@@ -140,22 +81,22 @@ public class Robot extends TimedRobot {
     private static final double INPUT_BUFFER_AMOUNT = 0.2;
 
     // NOTE: I/O
-    XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
-    XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
-    GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
+    private static final XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
+    private static final XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
+    private static final GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
     //hidWrapper HID = new hidWrapper(controllerA, controllerB, buttonPanel);
 
     // NOTE: Motors
-    MotorInterface frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left");
-    MotorInterface backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left");
-    MotorInterface frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right");
-    MotorInterface backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right");
+    private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
+    private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
+    private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
+    private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
     
-    MotorInterface spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
-    MotorInterface spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
+    private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
+    private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
 
-    MotorInterface armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm");
-    CANSparkMax carriageMotor = new CANSparkMax(CARRIAGE_CONTROLLER_CAN_ID, MotorType.kBrushed);
+    private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
+    private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
 
     // NOTE: Encoders
     private Encoder armEncoder = new Encoder(ARM_ENCODER_PIN_A, ARM_ENCODER_PIN_B, false, CounterBase.EncodingType.k4X);
@@ -261,12 +202,6 @@ public class Robot extends TimedRobot {
     }
 
     // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC STUFF)================================================
-    public boolean emergencysend() {
-        if (buttonPanel.getRawButton(1)) {
-            return true;
-        } else
-            return false;
-    }
     
     private void putDashboard() {
         SmartDashboard.putNumber("Gyro Accel X", gyro.getAccelX());
@@ -432,44 +367,6 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("new X: ", x);
         SmartDashboard.putNumber("new Y: ", y);
     }
-
-    /* ALL THINGS PATHPLANNER BELOW */
-    // Locations of the wheels relative to the robot center.
-    // Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
-    // Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
-    // Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
-    // Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
-
-    // // Creating my kinematics object using the wheel locations.
-    // MecanumDriveKinematics m_kinematics = new MecanumDriveKinematics(
-    //         m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation);
-
-    // Rotation2d m_gyro = new
-    // Creating my odometry object from the kinematics object and the initial wheel
-    // positions.
-    // MecanumDriveOdometry m_odometry = new MecanumDriveOdometry(
-    // m_kinematics,
-    // aGyro.getRotation2d(),
-    // new MecanumDriveWheelPositions(
-    // frontLeft.getSelectedSensorPosition(0),
-    // frontRight.getSelectedSensorPosition(0),
-    // backLeft.getSelectedSensorPosition(0), backRight.getSelectedSensorPosition(0)
-    // ),
-    // new Pose2d(5.0, 13.5, new Rotation2d())
-    // );
-
-    // public void pathplanner() {
-    //     PathPlannerTrajectory examplePath = PathPlanner.loadPath("Example Path", new PathConstraints(4, 3));
-    //     PathPlannerState exampleState = (PathPlannerState) examplePath.sample(1.2);
-
-    //     // NOTE: Print the velocity at the sampled time for impromptu, theoretically use
-    //     // this with the funny computere vision
-    //     PathPlannerTrajectory traj1 = PathPlanner.generatePath(
-    //             new PathConstraints(4, 3),
-    //             new PathPoint(new Translation2d(1.0, 1.0), Rotation2d.fromDegrees(0)), // position, heading
-    //             new PathPoint(new Translation2d(3.0, 3.0), Rotation2d.fromDegrees(45)) // position, heading
-    //     );
-    // }
 
     public void AutoMove() {
         drive.driveCartesian(-0.3,0,0);

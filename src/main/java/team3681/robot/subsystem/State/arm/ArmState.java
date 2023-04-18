@@ -1,6 +1,6 @@
-package team3681.robot.arm;
+package team3681.robot.subsystem.State.arm;
 
-public enum ArmState {
+public enum ArmState { //NOTE: THIS IS INEFFICIENT AND DOESNT ALLOW FOR MODULARITY
     Idle,
     MatchIdle,
     Home,
