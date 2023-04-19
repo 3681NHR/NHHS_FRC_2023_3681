@@ -1,5 +1,25 @@
 package team3681.robot.subsystem.State.Events;
 
-public class AutoManager {
+import team3681.robot.subsystem.State.Events.interfaces.BehaviorManager;
+
+public class AutoManager implements BehaviorManager {
+
+    @Override
+    public void initialize() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'initialize'");
+    }
+
+    @Override
+    public void executeBehavior(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'executeBehavior'");
+    }
+
+    @Override
+    public void stopBehavior(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'stopBehavior'");
+    }
     
 }

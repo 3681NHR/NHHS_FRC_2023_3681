@@ -7,21 +7,36 @@ import edu.wpi.first.wpilibj.Joystick;
 
 /**
  * Builds HIDWrapper and allows for flexibility/encapsulation.
- * <p> Why?: I anticipate the need to have different controllers in the future, 
- * <p> and this allows me or you to not need to directly create the objects 
- * <P>of the required class. 
- * <p> ===== example =====
- * <p>HIDWrapper xboxWrapper = new HIDWrapperBuilder()
- * <p>  .withXboxController(0)
- * <p>  .build();
- * <p> -
- * <p>HIDWrapper ps4Wrapper = new HIDWrapperBuilder()
- * <p>  .withPS4Controller(0)
- * <p>  .build();
- * <p> -
- * <p> HIDWrapper joystickWrapper = new HIDWrapperBuilder()
- * <p>  .withJoystick(0)
- * <p>  .build();
+ * <p>
+ * Why?: I anticipate the need to have different controllers in the future,
+ * <p>
+ * and this allows me or you to not need to directly create the objects
+ * <P>
+ * of the required class.
+ * <p>
+ * ===== example =====
+ * <p>
+ * HIDWrapper xboxWrapper = new HIDWrapperBuilder()
+ * <p>
+ * .withXboxController(0)
+ * <p>
+ * .build();
+ * <p>
+ * -
+ * <p>
+ * HIDWrapper ps4Wrapper = new HIDWrapperBuilder()
+ * <p>
+ * .withPS4Controller(0)
+ * <p>
+ * .build();
+ * <p>
+ * -
+ * <p>
+ * HIDWrapper joystickWrapper = new HIDWrapperBuilder()
+ * <p>
+ * .withJoystick(0)
+ * <p>
+ * .build();
  *
  * @see HIDWrapper
  * @see GenericHID
@@ -57,11 +72,10 @@ public class HIDWrapperBuilder {
 
     /**
      * HIDWrapper constructor
+     * 
      * @return
      */
     public HIDWrapper build() {
         return new HIDWrapper(controller);
     }
 }
-
-

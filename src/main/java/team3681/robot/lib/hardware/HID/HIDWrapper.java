@@ -4,26 +4,22 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 
 import java.lang.RuntimeException;
 /**
  * Universal controller, read more below!
  * @see HIDWrapperBuilder
  */
-import java.util.ArrayList;
-
 public class HIDWrapper {
-
-    private GenericHID controller;
-
     // NOTE: I hear using instanceof is kinda bad practice because it makes the code
-    // not as modifiable and therefore not polymorphible(if that even is a word)
+    // not as modifiable and therefore not awesome
     // if someone wants they can fix it or like, yknow make better code
     // or hear me out, not use this at all and stick with directly creating
     // controller objects.
     // this is my attempt at better encapsulation.
-    // - Daniel
+    // - Daniel (the bitch boy)
+
+    private GenericHID controller;
 
     /**
      * Constructor for HIDWrapper. Use with the builder pattern.
@@ -32,28 +28,21 @@ public class HIDWrapper {
      * @param controller
      */
     public HIDWrapper(GenericHID controller) {
-        if (HIDSort(controller) != null) {
-            this.controller = HIDSort(controller);
-        } else {
+        if (!(controller instanceof XboxController || controller instanceof PS4Controller || controller instanceof Joystick)) {
             throw new RuntimeException("That is not a valid controller type.");
         }
+        this.controller = HIDSort(controller);
     }
 
     private GenericHID HIDSort(GenericHID controller) {
         if (controller instanceof XboxController) {
             return (XboxController) controller;
-
         } else if (controller instanceof PS4Controller) {
-            return controller = (PS4Controller) controller;
-
+            return (PS4Controller) controller;
         } else if (controller instanceof Joystick) {
-            return controller = (Joystick) controller;
-
-        } else if (controller instanceof GenericHID) {
-            return controller;
-
+            return (Joystick) controller;
         } else {
-            return null;
+            throw new RuntimeException("That is not a valid controller type.");
         }
     }
 
@@ -229,8 +218,8 @@ public class HIDWrapper {
      * @deprecated
      * @return all info from the joystick
      */
-    public double[] listenJS() {
-        double[] joystickInfo = new double[18];
+    public double[] listenJS() { //TODO: Unfinished stub
+        double[] joystickInfo = new double[1];
         if (controller instanceof Joystick) {
             Joystick js = (Joystick) controller;
 
@@ -239,6 +228,35 @@ public class HIDWrapper {
             return null;
         }
         return joystickInfo;
+    }
+
+    /** @unfinished
+     * look at the other methods and finish later.
+     * I also suggest actually seeing what is outputted. I dont know what all the methods do.
+     * @deprecated
+     * @return all info from a GenericHID
+     */
+    public double[] listenGHID() { //TODO: Unfinished stub
+        double[] GenericHIDInfo = new double[11];
+        if (controller instanceof GenericHID) {
+            //NOTE: No need to cast if this is true and it should be.
+
+            GenericHIDInfo[0] = controller.getPOV();
+
+            GenericHIDInfo[1] = controller.getRawButtonPressed(1) ? 1.0 : 0;
+            GenericHIDInfo[2] = controller.getRawButtonPressed(2) ? 1.0 : 0;
+            GenericHIDInfo[3] = controller.getRawButtonPressed(3) ? 1.0 : 0;
+            GenericHIDInfo[4] = controller.getRawButtonPressed(4) ? 1.0 : 0;
+            GenericHIDInfo[5] = controller.getRawButtonPressed(5) ? 1.0 : 0;
+            GenericHIDInfo[6] = controller.getRawButtonPressed(6) ? 1.0 : 0;
+            GenericHIDInfo[7] = controller.getRawButtonPressed(7) ? 1.0 : 0;
+            GenericHIDInfo[8] = controller.getRawButtonPressed(8) ? 1.0 : 0;
+            GenericHIDInfo[9] = controller.getRawButtonPressed(9) ? 1.0 : 0;
+            GenericHIDInfo[10] = controller.getRawButtonPressed(10) ? 1.0 : 0;
+        } else {
+            return null;
+        }
+        return GenericHIDInfo;
     }
 
 }

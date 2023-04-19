@@ -2,7 +2,7 @@ package team3681.robot.lib.drivebase;
 
 import edu.wpi.first.wpilibj.drive.RobotDriveBase;
 
-public class SDrive extends RobotDriveBase {
+public class PrototypeDrive extends RobotDriveBase{
 
     @Override
     public void stopMotor() {

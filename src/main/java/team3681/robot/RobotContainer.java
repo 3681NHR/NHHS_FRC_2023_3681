@@ -6,7 +6,7 @@ import team3681.robot.lib.hardware.motor.VictorWrapper;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 import team3681.robot.lib.hardware.HID.HIDWrapper;
 import team3681.robot.lib.hardware.HID.HIDWrapperBuilder;
-import team3681.robot.subsystem.State.CommandHandler;
+import team3681.robot.subsystem.State.Events.CommandHandler;
 import team3681.robot.subsystem.State.arm.ArmController;
 import team3681.robot.subsystem.State.arm.ArmState;
 import team3681.robot.subsystem.State.arm.ArmWrapper;
