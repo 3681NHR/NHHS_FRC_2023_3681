@@ -1,4 +1,4 @@
-package team3681.robot.subsystem.State.Events;
+package team3681.robot.subsystem.State.Events.Command;
 
 import java.util.Queue;
 import java.util.LinkedList;

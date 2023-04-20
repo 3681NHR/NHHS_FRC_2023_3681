@@ -1,4 +1,4 @@
-package team3681.robot.subsystem.State.Events;
+package team3681.robot.subsystem.State.Events.Command;
 
 import edu.wpi.first.wpilibj.drive.RobotDriveBase;
 
