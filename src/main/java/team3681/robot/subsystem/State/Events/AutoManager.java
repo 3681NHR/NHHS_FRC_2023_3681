@@ -4,6 +4,10 @@ import team3681.robot.subsystem.State.Events.interfaces.BehaviorManager;
 
 public class AutoManager implements BehaviorManager {
 
+    public AutoManager() {
+
+    }
+    
     @Override
     public void initialize() {
         // TODO Auto-generated method stub
@@ -20,6 +24,12 @@ public class AutoManager implements BehaviorManager {
     public void stopBehavior(String name) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'stopBehavior'");
+    }
+
+    @Override
+    public void addBehavior(String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'addBehavior'");
     }
     
 }

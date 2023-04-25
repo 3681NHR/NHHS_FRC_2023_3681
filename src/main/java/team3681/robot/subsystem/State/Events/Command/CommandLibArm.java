@@ -6,9 +6,8 @@ import team3681.robot.lib.drivebase.MDrive;
 import team3681.robot.lib.drivebase.PrototypeDrive;
 import team3681.robot.lib.drivebase.SDrive;
 import team3681.robot.lib.hardware.motor.SparkWrapper;
-import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 /**
- * CommandLib is a library of commands to use.
+ * CommandArmLib is a library of commands to use.
  * <p>
  * Every static class inside defines one command.
  * <p>
@@ -23,7 +22,7 @@ import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 
  //NOTE: DO NOT USE CODE UNSAFE FOR THREADS IN HERE !!!
 
-public class CommandLib {
+public class CommandLibArm {
     private static RobotDriveBase drive;
     private static SparkWrapper MotorA;
     private static SparkWrapper MotorB;
@@ -36,19 +35,19 @@ public class CommandLib {
      * real!
      * @param drive
      */
-    public CommandLib(RobotDriveBase drive, UniversalMotor motorA2, UniversalMotor motorB2) {
+    public CommandLibArm(RobotDriveBase drive, SparkWrapper MotorA, SparkWrapper MotorB) {
         if (drive instanceof MDrive) {
-            CommandLib.drive = (MDrive) drive;
+            CommandLibArm.drive = (MDrive) drive;
         } else if (drive instanceof PrototypeDrive) {
-            CommandLib.drive = (PrototypeDrive) drive;
+            CommandLibArm.drive = (PrototypeDrive) drive;
         } else if (drive instanceof SDrive) {
-            CommandLib.drive = (SDrive) drive;
+            CommandLibArm.drive = (SDrive) drive;
         } else {
             throw new RuntimeException("I didn't build in support for anything else. Too bad.");
         }
 
-        CommandLib.MotorA = (SparkWrapper) motorA2;
-        CommandLib.MotorB = (SparkWrapper) motorB2;
+        CommandLibArm.MotorA = MotorA;
+        CommandLibArm.MotorB = MotorB;
     }
 
     public static class StopCommand implements CommandHandler.CommandPointer {

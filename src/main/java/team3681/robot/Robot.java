@@ -147,8 +147,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // NOTE: Reset things
-        //HID.hidCalibrate();
-
+            
         armController.setState(ArmState.RecalibrateWait);
 
         MainArm.calibrateArm();

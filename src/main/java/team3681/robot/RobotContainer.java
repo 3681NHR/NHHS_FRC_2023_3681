@@ -6,7 +6,10 @@ import team3681.robot.lib.hardware.motor.VictorWrapper;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 import team3681.robot.lib.hardware.HID.HIDWrapper;
 import team3681.robot.lib.hardware.HID.HIDWrapperBuilder;
+import team3681.robot.subsystem.State.Events.AutoManager;
+import team3681.robot.subsystem.State.Events.TeleopManager;
 import team3681.robot.subsystem.State.Events.Command.CommandHandler;
+import team3681.robot.subsystem.State.Events.interfaces.BehaviorManager;
 import team3681.robot.subsystem.State.arm.ArmController;
 import team3681.robot.subsystem.State.arm.ArmState;
 import team3681.robot.subsystem.State.arm.ArmWrapper;
@@ -101,8 +104,21 @@ public class RobotContainer {
     private static final HIDWrapper buttonPanel = new HIDWrapperBuilder()
         .withGenericHID(BUTTON_PANEL_USB_PORT)
         .build();
+    
+    private static final BehaviorManager TOP = new TeleopManager();
+    private static final BehaviorManager AUTO = new AutoManager();
 
     // NOTE: Motors
+    //TODO: Create builders for motors.
+    /* example:
+     * 
+     * new MotorBuilder;
+     * .with(MotorType)
+     * .brushed/brushless
+     * .port(#)
+     * .name("")
+     * .build();
+     */
     private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
     private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
     private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);

@@ -262,8 +262,8 @@ public class ArmController {
         });
 
         ArmController.states.put(ArmState.Finish, new ArmAction() {
-            private double ARM_ANGLE = -7;
-            private double CARRIAGE_ANGLE = -5.5;
+            private final double ARM_ANGLE = -7;
+            private final double CARRIAGE_ANGLE = -5.5;
 
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {

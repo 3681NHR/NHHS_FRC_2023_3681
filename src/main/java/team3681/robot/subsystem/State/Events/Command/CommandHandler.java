@@ -2,6 +2,7 @@ package team3681.robot.subsystem.State.Events.Command;
 
 import java.util.Queue;
 import java.util.LinkedList;
+import java.util.Stack;
 
 /**
  * This class is created to implement the Command pattern by encapsulating a
@@ -19,6 +20,7 @@ import java.util.LinkedList;
  */
 public class CommandHandler {
     private Queue<CommandPointer> commandQueue;
+    private Stack<CommandPointer> commandHistory; //NOTE: For debugging purposes. You cant really undo mechanical actions can you.
     private Thread queueThread;
 
     /**
@@ -39,6 +41,7 @@ public class CommandHandler {
      */
     public CommandHandler() {
         this.commandQueue = new LinkedList<>();
+        this.commandHistory = new Stack<>();
         this.queueThread = new Thread(() -> {
             while (true) {
                 synchronized (commandQueue) {
@@ -51,6 +54,7 @@ public class CommandHandler {
                     }
                     CommandPointer command = commandQueue.poll();
                     command.execute();
+                    commandHistory.push(command);
                 }
             }
         });
@@ -60,6 +64,22 @@ public class CommandHandler {
     public void addCommand(CommandPointer command) {
         synchronized (commandQueue) {
             commandQueue.offer(command);
+            commandQueue.notify(); // Notify the waiting thread that there is a new command in the queue
+        }
+    }
+
+    public void clearCommandQueue() {
+        synchronized (commandQueue) {
+            commandQueue.clear();
+        }
+    }
+    
+    public void insertCommandToFront(CommandPointer command) {
+        synchronized (commandQueue) {
+            LinkedList<CommandPointer> tempQueue = new LinkedList<>();
+            tempQueue.add(command);
+            tempQueue.addAll(commandQueue);
+            commandQueue = tempQueue;
             commandQueue.notify(); // Notify the waiting thread that there is a new command in the queue
         }
     }

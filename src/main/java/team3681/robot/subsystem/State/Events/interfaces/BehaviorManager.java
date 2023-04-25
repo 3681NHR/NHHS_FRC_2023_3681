@@ -12,4 +12,6 @@ public interface BehaviorManager {
 
     // Method to stop a behavior by name
     public void stopBehavior(String name);
+
+    public void addBehavior(String name);
 }
