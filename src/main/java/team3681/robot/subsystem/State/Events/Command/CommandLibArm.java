@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.drive.RobotDriveBase;
 import team3681.robot.lib.drivebase.MDrive;
 import team3681.robot.lib.drivebase.PrototypeDrive;
 import team3681.robot.lib.drivebase.SDrive;
-import team3681.robot.lib.hardware.motor.SparkWrapper;
+import team3681.robot.lib.hardware.motor.model.SparkWrapper;
 /**
  * CommandArmLib is a library of commands to use.
  * <p>

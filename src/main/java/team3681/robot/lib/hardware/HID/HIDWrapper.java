@@ -19,6 +19,9 @@ public class HIDWrapper {
     // this is my attempt at better encapsulation.
     // - Daniel (the bitch boy)
 
+    // also this fails the fuck out of solid. Do look up what it is.
+    // this wrapper has multiple responsibilitites.
+
     private GenericHID controller;
 
     /**

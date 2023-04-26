@@ -1,4 +1,4 @@
-package team3681.robot.lib.hardware.motor;
+package team3681.robot.lib.hardware.motor.model;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.ParamEnum;
@@ -65,13 +65,46 @@ public class SparkWrapper implements UniversalMotor {
      * @see CANSparkMax
      *
      */
-    public SparkWrapper(int deviceNumber, String motorName, boolean motorType) {
-        brushSet(deviceNumber, motorType);
-        motor.setIdleMode(IdleMode.kBrake);
-        sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(deviceNumber, 1);
+    public SparkWrapper(Builder builder) {
+        motor = new CANSparkMax(builder.port, builder.motorType);
+        motor.setIdleMode(builder.idleMode);
         pidController = motor.getPIDController();
         encoder = motor.getEncoder();
-        name = motorName;
+        name = builder.motorName;
+
+        sparkMaxHandle = CANSparkMaxJNI.c_SparkMax_Create(builder.port, 1);
+
+    }
+
+    public static class Builder {
+        private final int port;
+        private String motorName = "";
+        private IdleMode idleMode = IdleMode.kBrake; //Defaults to Brake.
+        private CANSparkMaxLowLevel.MotorType motorType = CANSparkMaxLowLevel.MotorType.kBrushless;
+
+        public Builder(int port) {
+            this.port = port;
+        }
+
+        public Builder withMotorName(String motorName) {
+            this.motorName = motorName;
+            return this;
+        }
+
+        public Builder withMotorType(CANSparkMaxLowLevel.MotorType motorType) {
+            this.motorType = motorType;
+            return this;
+        }
+
+        public Builder withIdleMode(IdleMode idleMode) {
+            this.idleMode = idleMode;
+            return this;
+        }
+
+
+        public SparkWrapper build() {
+            return new SparkWrapper(this);
+        }
     }
 
     /**
@@ -80,13 +113,6 @@ public class SparkWrapper implements UniversalMotor {
      * @param deviceNumber
      * @param motorType
      */
-    public void brushSet(int deviceNumber, boolean motorType) {
-        if (motorType = false) {
-            motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushed);
-        } else { // NOTE: Default, whether
-            motor = new CANSparkMax(deviceNumber, CANSparkMaxLowLevel.MotorType.kBrushless);
-        }
-    }
 
     @Override
     public void set(ControlMode mode, double demand) {

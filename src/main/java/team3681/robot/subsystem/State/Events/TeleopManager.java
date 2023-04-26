@@ -6,8 +6,8 @@ import team3681.robot.subsystem.State.Events.Command.CommandHandler.CommandPoint
 import team3681.robot.subsystem.State.Events.interfaces.BehaviorManager;
 
 import team3681.robot.lib.drivebase.MDrive;
-import team3681.robot.lib.hardware.motor.SparkWrapper;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
+import team3681.robot.lib.hardware.motor.model.SparkWrapper;
 
 public class TeleopManager implements BehaviorManager{
     MDrive drive;

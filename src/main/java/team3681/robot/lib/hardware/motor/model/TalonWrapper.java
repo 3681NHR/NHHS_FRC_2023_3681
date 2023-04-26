@@ -1,4 +1,4 @@
-package team3681.robot.lib.hardware.motor;
+package team3681.robot.lib.hardware.motor.model;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.ParamEnum;

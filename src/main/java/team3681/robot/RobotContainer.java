@@ -1,9 +1,9 @@
 package team3681.robot;
 
 import team3681.robot.lib.drivebase.MDrive;
-import team3681.robot.lib.hardware.motor.SparkWrapper;
-import team3681.robot.lib.hardware.motor.VictorWrapper;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
+import team3681.robot.lib.hardware.motor.model.SparkWrapper;
+import team3681.robot.lib.hardware.motor.model.VictorWrapper;
 import team3681.robot.lib.hardware.HID.HIDWrapper;
 import team3681.robot.lib.hardware.HID.HIDWrapperBuilder;
 import team3681.robot.subsystem.State.Events.AutoManager;
@@ -44,6 +44,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 // import com.pathplanner.lib.PathPoint;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
@@ -119,16 +120,22 @@ public class RobotContainer {
      * .name("")
      * .build();
      */
-    private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
-    private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
-    private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
-    private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
+    // private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
+    // private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
+    // private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
+    // private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
 
-    private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
-    private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
+    // private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
+    // private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
 
-    private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
-    private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
+    // private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
+    // private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
+
+    private static final UniversalMotor frontLeft = new SparkWrapper.Builder(FRONT_LEFT_WHEEL_CAN_ID)
+        .withMotorName("Front Left")
+        .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
 
     // NOTE: Encoders
     private static final Encoder armEncoder = new Encoder(ARM_ENCODER_PIN_A, ARM_ENCODER_PIN_B, false,
@@ -146,8 +153,8 @@ public class RobotContainer {
     DigitalInput LSB = new DigitalInput(LIMIT_SWITCH_PORT_B);
 
     // NOTE: Drives / Actors
-    public static final ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    public static final MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
+    //public static final ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
+    //public static final MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
     public static final ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
 

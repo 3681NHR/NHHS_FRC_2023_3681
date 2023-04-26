@@ -5,9 +5,9 @@
 package team3681.robot;
 
 import team3681.robot.lib.drivebase.MDrive;
-import team3681.robot.lib.hardware.motor.SparkWrapper;
-import team3681.robot.lib.hardware.motor.VictorWrapper;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
+import team3681.robot.lib.hardware.motor.model.SparkWrapper;
+import team3681.robot.lib.hardware.motor.model.VictorWrapper;
 import team3681.robot.subsystem.State.arm.ArmController;
 import team3681.robot.subsystem.State.arm.ArmState;
 import team3681.robot.subsystem.State.arm.ArmWrapper;

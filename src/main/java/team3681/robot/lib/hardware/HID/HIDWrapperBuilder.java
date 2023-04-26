@@ -47,7 +47,7 @@ import edu.wpi.first.wpilibj.Joystick;
  * @author Me.
  */
 public class HIDWrapperBuilder {
-
+    //NOTE: this makes sense.
     private GenericHID controller;
 
     public HIDWrapperBuilder withXboxController(int port) {
