@@ -29,7 +29,7 @@ public class VictorWrapper extends VictorSPX implements UniversalMotor {
     protected String name = "";
 
     protected final AtomicBoolean isClosed = new AtomicBoolean(false);
-
+    
     protected void throwIfClosed() {
         if (isClosed.get()) {
           throw new IllegalStateException("This SPARK MAX object has previously been closed.");
@@ -37,14 +37,34 @@ public class VictorWrapper extends VictorSPX implements UniversalMotor {
       }
 
     /**
-     * Constructor
+     * I am too tired to add more builder functionality. I have no idea what the idle setting configs are.
      *
      * @param deviceNumber [0,62]
      */
-    public VictorWrapper(int deviceNumber, String motorName) {
-        super(deviceNumber);
-        name = motorName;
+    public VictorWrapper(Builder builder) {
+        super(builder.port);
+        name = builder.motorName;
     }
+
+    public static class Builder {
+        private final int port;
+        private String motorName = "";
+
+        public Builder(int port) {
+            this.port = port;
+        }
+
+        public Builder withMotorName(String motorName) {
+            this.motorName = motorName;
+            return this;
+        }
+
+        public VictorWrapper build() {
+            return new VictorWrapper(this);
+        }
+    }
+
+    
     @Override
     public void stopMotor(ControlMode mode){
         throwIfClosed();

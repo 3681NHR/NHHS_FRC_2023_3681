@@ -17,7 +17,9 @@ public class HIDWrapper {
     // or hear me out, not use this at all and stick with directly creating
     // controller objects.
     // this is my attempt at better encapsulation.
-    // - Daniel (the bitch boy)
+    // - Daniel
+
+    // another note is that you dont have to use this, in my head it is a good idea and easy to read and use but honestly im not sure at fucking all.
 
     // also this fails the fuck out of solid. Do look up what it is.
     // this wrapper has multiple responsibilitites.
@@ -35,6 +37,7 @@ public class HIDWrapper {
             throw new RuntimeException("That is not a valid controller type.");
         }
         this.controller = HIDSort(controller);
+        
     }
 
     private GenericHID HIDSort(GenericHID controller) {
@@ -47,6 +50,49 @@ public class HIDWrapper {
         } else {
             throw new RuntimeException("That is not a valid controller type.");
         }
+    }
+
+    public Integer port() {
+        return this.controller.getPort();
+    }
+
+    /**
+     * Inherits all the methods from XboxController
+     */
+    public static class XB extends XboxController {
+
+        public XB(int port) {
+            super(port);
+            //TODO Auto-generated constructor stub
+        }
+
+    }
+
+    public static class GHID extends GenericHID {
+
+        public GHID(int port) {
+            super(port);
+            //TODO Auto-generated constructor stub
+        }
+
+    }
+
+    public static class JS extends Joystick {
+
+        public JS(int port) {
+            super(port);
+            //TODO Auto-generated constructor stub
+        }
+        
+    }
+
+    public static class PS4 extends PS4Controller {
+
+        public PS4(int port) {
+            super(port);
+            //TODO Auto-generated constructor stub
+        }
+        
     }
 
     /**

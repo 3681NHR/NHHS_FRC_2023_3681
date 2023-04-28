@@ -105,7 +105,7 @@ public class RobotContainer {
     private static final HIDWrapper buttonPanel = new HIDWrapperBuilder()
         .withGenericHID(BUTTON_PANEL_USB_PORT)
         .build();
-    
+
     private static final BehaviorManager TOP = new TeleopManager();
     private static final BehaviorManager AUTO = new AutoManager();
 
@@ -120,20 +120,49 @@ public class RobotContainer {
      * .name("")
      * .build();
      */
-    // private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
-    // private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
-    // private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
-    // private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
+    
+    private static final UniversalMotor spinnerA = new VictorWrapper.Builder(SPINNER_A)
+        .withMotorName("Spinner A")
+        .build();
 
-    // private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
-    // private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
+    private static final UniversalMotor spinnerB = new VictorWrapper.Builder(SPINNER_B)
+        .withMotorName("Spinner B")
+        .build();
 
-    // private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
-    // private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
 
     private static final UniversalMotor frontLeft = new SparkWrapper.Builder(FRONT_LEFT_WHEEL_CAN_ID)
         .withMotorName("Front Left")
         .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
+
+    private static final UniversalMotor backLeft = new SparkWrapper.Builder(BACK_LEFT_WHEEL_CAN_ID)
+        .withMotorName("Back Left")
+        .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
+
+    private static final UniversalMotor frontRight = new SparkWrapper.Builder(FRONT_RIGHT_WHEEL_CAN_ID)
+        .withMotorName("Front Right")
+        .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
+
+    private static final UniversalMotor backRight = new SparkWrapper.Builder(BACK_RIGHT_WHEEL_CAN_ID)
+        .withMotorName("Back Right")
+        .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
+    
+    private static final UniversalMotor armMotor = new SparkWrapper.Builder(ARM_CONTROLLER_CAN_ID)
+        .withMotorName("Arm")
+        .withMotorType(MotorType.kBrushless)
+        .withIdleMode(IdleMode.kBrake)
+        .build();
+
+    private static final UniversalMotor carriageMotor = new SparkWrapper.Builder(CARRIAGE_CONTROLLER_CAN_ID)
+        .withMotorName("Carriage")
+        .withMotorType(MotorType.kBrushed)
         .withIdleMode(IdleMode.kBrake)
         .build();
 
@@ -155,7 +184,7 @@ public class RobotContainer {
     // NOTE: Drives / Actors
     //public static final ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
     //public static final MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
-    public static final ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
+    // public static final ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
     public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
 
     // NOTE: Raspberry PI interface related variables
@@ -213,9 +242,9 @@ public class RobotContainer {
         SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
 
         //NOTE: Methods from other objects to put their information on display. It's kinda dumb. Implement something smarter if you want, im not gonna do it.
-        MainArm.putDashboard();
+        // MainArm.putDashboard();
         
-        armController.putDashboard();
+        // armController.putDashboard();
     }
 
     /**

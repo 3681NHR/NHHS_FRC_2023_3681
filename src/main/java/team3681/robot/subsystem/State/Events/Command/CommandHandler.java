@@ -1,8 +1,9 @@
 package team3681.robot.subsystem.State.Events.Command;
 
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.Stack;
+import java.util.Deque;
+import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Semaphore;
 
 /**
  * This class is created to implement the Command pattern by encapsulating a
@@ -19,42 +20,40 @@ import java.util.Stack;
  * (Queuing a set of commands in order)
  */
 public class CommandHandler {
-    private Queue<CommandPointer> commandQueue;
-    private Stack<CommandPointer> commandHistory; //NOTE: For debugging purposes. You cant really undo mechanical actions can you.
+    private final int MAX_QUEUE_SIZE = 1000; // If memory somehow becomes a problem, you are doing something horribly wrong. Either way set this low to save memory or smth. 
+    private Semaphore queueSemaphore;
+
+    private Deque<CommandPointer> commandQueue;
+    private volatile boolean isRunning;
+    private Deque<CommandPointer> commandHistory = new ConcurrentLinkedDeque<>();  //NOTE: For debugging purposes. You cant really undo mechanical actions can you.
     private Thread queueThread;
 
     /**
      * Creates another thread to run the command queue. I want the capability to run
      * multiple command threads for concurrent commands. Every objct is a new
      * thread. Create more objects for more command subsets
-     * <p>
-     * Example:
-     * <p>
-     * CommandHandler handler = new CommandHandler();
-     * <p>
-     * CommandHandler.CommandPointer command = new RealCommand2();
-     * <p>
-     * handler.addCommand(command);
-     * <p>
-     * handler.executeCommands(); // Prints "Stopping the robot"
-     * 
      */
     public CommandHandler() {
-        this.commandQueue = new LinkedList<>();
-        this.commandHistory = new Stack<>();
+        this.commandQueue = new ArrayDeque<>();
+        this.isRunning = true;
+        this.queueSemaphore = new Semaphore(MAX_QUEUE_SIZE);
+
+        this.commandHistory = new ConcurrentLinkedDeque<>();
         this.queueThread = new Thread(() -> {
-            while (true) {
+            while (isRunning) {
                 synchronized (commandQueue) {
                     while (commandQueue.isEmpty()) {
                         try {
                             commandQueue.wait();
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
+                            System.err.println("Thread interrupted while waiting for command queue");
                         }
                     }
                     CommandPointer command = commandQueue.poll();
                     command.execute();
                     commandHistory.push(command);
+                    queueSemaphore.release();
                 }
             }
         });
@@ -64,26 +63,26 @@ public class CommandHandler {
     public void addCommand(CommandPointer command) {
         synchronized (commandQueue) {
             commandQueue.offer(command);
-            commandQueue.notify(); // Notify the waiting thread that there is a new command in the queue
+            commandQueue.notify(); 
         }
     }
 
     public void clearCommandQueue() {
         synchronized (commandQueue) {
             commandQueue.clear();
+            queueSemaphore.release(MAX_QUEUE_SIZE);
+
         }
     }
     
     public void insertCommandToFront(CommandPointer command) {
         synchronized (commandQueue) {
-            LinkedList<CommandPointer> tempQueue = new LinkedList<>();
-            tempQueue.add(command);
-            tempQueue.addAll(commandQueue);
-            commandQueue = tempQueue;
-            commandQueue.notify(); // Notify the waiting thread that there is a new command in the queue
+            commandQueue.addFirst(command);
+            commandQueue.notify(); 
         }
     }
 
+    @FunctionalInterface
     public static interface CommandPointer {
         public void execute();
     }

@@ -21,7 +21,7 @@ import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
  * and the back half consistening of two non-motorized omni wheels.
  * 
  * <pre>
- * [o] - [o]
+ *[o] - [o]
  *|       |
  *|       |
  *{} - - {}

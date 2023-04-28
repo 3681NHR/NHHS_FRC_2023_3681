@@ -86,17 +86,17 @@ public class Robot extends TimedRobot {
     private static final GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
     //hidWrapper HID = new hidWrapper(controllerA, controllerB, buttonPanel);
 
-    // NOTE: Motors
-    private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
-    private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
-    private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
-    private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
+    // // NOTE: Motors
+    // private static final UniversalMotor frontLeft = new SparkWrapper(FRONT_LEFT_WHEEL_CAN_ID, "Front Left", true);
+    // private static final UniversalMotor backLeft = new SparkWrapper(BACK_LEFT_WHEEL_CAN_ID, "Back Left", true);
+    // private static final UniversalMotor frontRight = new SparkWrapper(FRONT_RIGHT_WHEEL_CAN_ID, "Front Right", true);
+    // private static final UniversalMotor backRight = new SparkWrapper(BACK_RIGHT_WHEEL_CAN_ID, "Back Right", true);
     
-    private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
-    private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
+    // private static final UniversalMotor spinnerA = new VictorWrapper(SPINNER_A, "Spinner A");
+    // private static final UniversalMotor spinnerB = new VictorWrapper(SPINNER_B, "Spinner B");
 
-    private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
-    private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
+    // private static final UniversalMotor armMotor = new SparkWrapper(ARM_CONTROLLER_CAN_ID, "Rotating Arm", true);
+    // private static final UniversalMotor carriageMotor = new SparkWrapper(CARRIAGE_CONTROLLER_CAN_ID, "Carriage", false);
 
     // NOTE: Encoders
     private Encoder armEncoder = new Encoder(ARM_ENCODER_PIN_A, ARM_ENCODER_PIN_B, false, CounterBase.EncodingType.k4X);
@@ -112,9 +112,9 @@ public class Robot extends TimedRobot {
     DigitalInput LSB = new DigitalInput(LIMIT_SWITCH_PORT_B);
     
     // NOTE: Drives / Actors
-    ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
-    ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
+    // ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
+    // MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
+    // ArmController  = new ArmController(MainArm, ArmState.RecalibrateWait);
     ADIS16448_IMU gyro = new ADIS16448_IMU();
 
     // NOTE: Raspberry PI interface related variables
@@ -139,8 +139,8 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         armPistonSolenoid.set(kReverse);
-        armController.setState(ArmState.RecalibrateWait);
-        MainArm.generalCalibration();
+        // .setState(ArmState.RecalibrateWait);
+        // MainArm.generalCalibration();
 
     }
 
@@ -148,11 +148,11 @@ public class Robot extends TimedRobot {
     public void robotInit() {
         // NOTE: Reset things
             
-        armController.setState(ArmState.RecalibrateWait);
 
-        MainArm.calibrateArm();
-        MainArm.calibrateCarriage();
-        MainArm.generalCalibration();
+
+        // MainArm.calibrateArm();
+        // MainArm.calibrateCarriage();
+        // MainArm.generalCalibration();
 
         gyro.calibrate();
         gyro.reset();
@@ -165,32 +165,27 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
 
-        putDashboard();
-        armController.runPeriodic(); //NOTE: WHY DO WE NEED TWO IT DOESNT MAKE SENSE
-        if (!LSA.get()) {MainArm.calibrateArm();}
-        if (!LSB.get()) {MainArm.calibrateCarriage();}
-        
+   
     }
 
     @Override
     public void teleopInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.RecalibrateWait);
-        MainArm.generalCalibration();
+     
     }
 
     @Override
     public void teleopPeriodic() {
         processInputs();
-        armController.runPeriodic();
+
     }
 
     @Override
     public void autonomousInit() {
         gyro.calibrate();
         gyro.reset();
-        armController.setState(ArmState.AutoHigh);
+        .setState(ArmState.AutoHigh);
     }
 
     @Override
@@ -221,7 +216,7 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
         MainArm.putDashboard();
         
-        armController.putDashboard();
+        .putDashboard();
     }
 
     public void initSolenoid(int fc1, int rc1, int fc2, int rc2) {
@@ -282,7 +277,7 @@ public class Robot extends TimedRobot {
         //         break;
         // }
 
-        // switch (armController.getState()) {
+        // switch (.getState()) {
         //     case Analog:
         //         MainArm.analogCarriage(carriageSpeedL - carriageSpeedR);
         //         MainArm.analogArm(multiplier * 2);
@@ -316,17 +311,17 @@ public class Robot extends TimedRobot {
         }
         if (controllerB.getYButtonPressed()) {
             //armPistonSolenoid.toggle(); // NOTE: Toggle pneumatics
-            armController.setState(ArmState.High);
+            .setState(ArmState.High);
         }
         if (controllerB.getXButtonPressed()) {
-            armController.setState(ArmState.SweepStart);
+            .setState(ArmState.SweepStart);
         }
         if (controllerB.getStartButtonPressed()) {
             handPistonSolenoid.toggle();
             armPistonSolenoid.toggle();
         }
         if(controllerB.getBackButton()) {
-                armController.setState(ArmState.Analog);
+                .setState(ArmState.Analog);
         }
         if (controllerA.getBButtonPressed()) {
             brakePistonSolenoid.toggle();

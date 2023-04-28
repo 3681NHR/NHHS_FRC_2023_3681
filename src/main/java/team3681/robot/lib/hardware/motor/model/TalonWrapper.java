@@ -35,6 +35,9 @@ public class TalonWrapper extends TalonFX implements UniversalMotor {
 
     protected String name = "";
 
+    //TODO: literally finish everything
+    //builder isnt set up either.
+    //look at the other motor files for help.
     public TalonWrapper(int deviceNumber, String motorName) {
         super(deviceNumber);
         name = motorName;

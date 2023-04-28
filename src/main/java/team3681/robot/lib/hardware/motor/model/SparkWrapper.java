@@ -101,7 +101,6 @@ public class SparkWrapper implements UniversalMotor {
             return this;
         }
 
-
         public SparkWrapper build() {
             return new SparkWrapper(this);
         }
