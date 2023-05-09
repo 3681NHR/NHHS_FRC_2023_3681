@@ -15,38 +15,42 @@ import edu.wpi.first.wpilibj.TimedRobot;
 
 public class Robot extends TimedRobot {
 
+    RobotContainer rContainer = new RobotContainer();
 
     @Override
     public void disabledInit() {
-
+        rContainer.onDisable();
     }
 
     @Override
     public void robotInit() {  
+        rContainer.onStart();
         System.out.println("Robot Initiated");
     }
 
     @Override
     public void robotPeriodic() {
-
+        rContainer.putDashboard();
     }
 
     @Override
     public void teleopInit() {
-
+        rContainer.onStart();
     }
 
     @Override
     public void teleopPeriodic() {
+        rContainer.teleop();
 
     }
 
     @Override
     public void autonomousInit() {
+        rContainer.onStart();
     }
 
     @Override
     public void autonomousPeriodic() {
-
+        rContainer.autonomousMode();
     }
 }
