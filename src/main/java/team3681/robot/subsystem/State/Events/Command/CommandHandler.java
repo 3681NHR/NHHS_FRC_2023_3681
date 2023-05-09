@@ -50,7 +50,7 @@ public class CommandHandler {
                             System.err.println("Thread interrupted while waiting for command queue");
                         }
                     }
-                    CommandPointer command = commandQueue.poll(); // NOTE: SO USEFUL!!!
+                    CommandPointer command = commandQueue.poll(); // NOTE: removes first element, returns it too
                     while (command.execute()) {} //NOTE: blocks the thread until completed.
                     commandHistory.push(command);
                     queueSemaphore.release();

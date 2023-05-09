@@ -284,4 +284,14 @@ public class RobotContainer {
         }
         return 0.0;
     }
+
+    private class StopRollerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            spinnerA.set(ControlMode.PercentOutput, 0);
+            spinnerB.set(ControlMode.PercentOutput, 0);
+        }
+        
+    }
 }
