@@ -44,6 +44,12 @@ public class TalonWrapper extends TalonFX implements UniversalMotor {
     }
 
     @Override
+    public void putDashboard() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'putDashboard'");
+    }
+    
+    @Override
     public ErrorCode configSelectedFeedbackSensor(FeedbackDevice feedbackDevice, int pidIdx, int timeoutMs) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'configSelectedFeedbackSensor'");

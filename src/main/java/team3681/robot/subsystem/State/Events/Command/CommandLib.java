@@ -53,17 +53,19 @@ public class CommandLib {
 
     public static class StopCommand implements CommandHandler.CommandPointer {
         @Override
-        public void execute() {
+        public boolean execute() {
             // Code to stop the robot
             System.out.println("Stopping the robot");
+            return false; //NOTE: If false stop
         }
     }
 
     public static class RealCommand2 implements CommandHandler.CommandPointer {
         @Override
-        public void execute() {
+        public boolean execute() {
             // Code to stop the robot
             System.out.println("Stopping the robot");
+            return false;
         }
     }
 

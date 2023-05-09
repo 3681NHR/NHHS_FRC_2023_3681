@@ -38,10 +38,10 @@ public class CommandHandler {
         this.isRunning = true;
         this.queueSemaphore = new Semaphore(MAX_QUEUE_SIZE);
 
-        this.commandHistory = new ConcurrentLinkedDeque<>();
-        this.queueThread = new Thread(() -> {
+        this.commandHistory = new ConcurrentLinkedDeque<>(); //NOTE: thread safe
+        this.queueThread = new Thread(() -> { //NOTE: thread
             while (isRunning) {
-                synchronized (commandQueue) {
+                synchronized (commandQueue) { //NOTE: more thread safety
                     while (commandQueue.isEmpty()) {
                         try {
                             commandQueue.wait();
@@ -50,8 +50,8 @@ public class CommandHandler {
                             System.err.println("Thread interrupted while waiting for command queue");
                         }
                     }
-                    CommandPointer command = commandQueue.poll();
-                    command.execute();
+                    CommandPointer command = commandQueue.poll(); // NOTE: SO USEFUL!!!
+                    while (command.execute()) {} //NOTE: blocks the thread until completed.
                     commandHistory.push(command);
                     queueSemaphore.release();
                 }
@@ -84,6 +84,6 @@ public class CommandHandler {
 
     @FunctionalInterface
     public static interface CommandPointer {
-        public void execute();
+        public boolean execute();
     }
 }

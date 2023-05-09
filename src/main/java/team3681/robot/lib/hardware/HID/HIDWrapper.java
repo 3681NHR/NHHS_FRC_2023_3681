@@ -7,8 +7,10 @@ import edu.wpi.first.wpilibj.XboxController;
 
 import java.lang.RuntimeException;
 /**
+ * 
  * Universal controller, read more below!
  * @see HIDWrapperBuilder
+ * @deprecated I dont appreciate how I made this, maybe you will.
  */
 public class HIDWrapper {
     // NOTE: I hear using instanceof is kinda bad practice because it makes the code

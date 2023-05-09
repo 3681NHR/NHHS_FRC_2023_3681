@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.Joystick;
 
-/**
+/**.<p>
  * Builds HIDWrapper and allows for flexibility/encapsulation.
  * <p>
  * Why?: I anticipate the need to have different controllers in the future,
@@ -43,6 +43,7 @@ import edu.wpi.first.wpilibj.Joystick;
  * @see XboxController
  * @see PS4Controller
  * @see Joystick
+ * @deprecated I dont appreciate how I made this, maybe you will.
  * 
  * @author Me.
  */

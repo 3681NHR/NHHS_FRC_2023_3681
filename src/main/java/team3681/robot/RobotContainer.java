@@ -90,28 +90,33 @@ public class RobotContainer {
     private static final double INPUT_BUFFER_AMOUNT = 0.2;
 
     // NOTE: I/O
-    // private static final XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
-    // private static final XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
-    // private static final GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
-    
-    private static final HIDWrapper controllerA = new HIDWrapperBuilder()
-        .withXboxController(CONTROLLER_USB_PORT_A)
-        .build();
+    private static final XboxController controllerA = new XboxController(CONTROLLER_USB_PORT_A);
+    private static final XboxController controllerB = new XboxController(CONTROLLER_USB_PORT_B);
+    private static final GenericHID buttonPanel = new GenericHID(BUTTON_PANEL_USB_PORT);
 
-    private static final HIDWrapper controllerB = new HIDWrapperBuilder()
-        .withXboxController(CONTROLLER_USB_PORT_B)
-        .build();
-    
-    private static final HIDWrapper buttonPanel = new HIDWrapperBuilder()
-        .withGenericHID(BUTTON_PANEL_USB_PORT)
-        .build();
+    // private static final HIDWrapper controllerA = new HIDWrapperBuilder()
+    // .withXboxController(CONTROLLER_USB_PORT_A)
+    // .build();
 
-    private static final BehaviorManager TOP = new TeleopManager();
+    // private static final HIDWrapper controllerB = new HIDWrapperBuilder()
+    // .withXboxController(CONTROLLER_USB_PORT_B)
+    // .build();
+
+    // private static final HIDWrapper buttonPanel = new HIDWrapperBuilder()
+    // .withGenericHID(BUTTON_PANEL_USB_PORT)
+    // .build();
+
+    private static final BehaviorManager TOP = new TeleopManager.Builder()
+            .withXboxControllerA(controllerA)
+            .withXboxControllerB(controllerB)
+            .build();
+
     private static final BehaviorManager AUTO = new AutoManager();
 
     // NOTE: Motors
-    //TODO: Create builders for motors.
-    /* example:
+    // TODO: Create builders for motors.
+    /*
+     * example:
      * 
      * new MotorBuilder;
      * .with(MotorType)
@@ -120,51 +125,50 @@ public class RobotContainer {
      * .name("")
      * .build();
      */
-    
+
     private static final UniversalMotor spinnerA = new VictorWrapper.Builder(SPINNER_A)
-        .withMotorName("Spinner A")
-        .build();
+            .withMotorName("Spinner A")
+            .build();
 
     private static final UniversalMotor spinnerB = new VictorWrapper.Builder(SPINNER_B)
-        .withMotorName("Spinner B")
-        .build();
-
+            .withMotorName("Spinner B")
+            .build();
 
     private static final UniversalMotor frontLeft = new SparkWrapper.Builder(FRONT_LEFT_WHEEL_CAN_ID)
-        .withMotorName("Front Left")
-        .withMotorType(MotorType.kBrushless)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
+            .withMotorName("Front Left")
+            .withMotorType(MotorType.kBrushless)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
 
     private static final UniversalMotor backLeft = new SparkWrapper.Builder(BACK_LEFT_WHEEL_CAN_ID)
-        .withMotorName("Back Left")
-        .withMotorType(MotorType.kBrushless)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
+            .withMotorName("Back Left")
+            .withMotorType(MotorType.kBrushless)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
 
     private static final UniversalMotor frontRight = new SparkWrapper.Builder(FRONT_RIGHT_WHEEL_CAN_ID)
-        .withMotorName("Front Right")
-        .withMotorType(MotorType.kBrushless)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
+            .withMotorName("Front Right")
+            .withMotorType(MotorType.kBrushless)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
 
     private static final UniversalMotor backRight = new SparkWrapper.Builder(BACK_RIGHT_WHEEL_CAN_ID)
-        .withMotorName("Back Right")
-        .withMotorType(MotorType.kBrushless)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
-    
+            .withMotorName("Back Right")
+            .withMotorType(MotorType.kBrushless)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
+
     private static final UniversalMotor armMotor = new SparkWrapper.Builder(ARM_CONTROLLER_CAN_ID)
-        .withMotorName("Arm")
-        .withMotorType(MotorType.kBrushless)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
+            .withMotorName("Arm")
+            .withMotorType(MotorType.kBrushless)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
 
     private static final UniversalMotor carriageMotor = new SparkWrapper.Builder(CARRIAGE_CONTROLLER_CAN_ID)
-        .withMotorName("Carriage")
-        .withMotorType(MotorType.kBrushed)
-        .withIdleMode(IdleMode.kBrake)
-        .build();
+            .withMotorName("Carriage")
+            .withMotorType(MotorType.kBrushed)
+            .withIdleMode(IdleMode.kBrake)
+            .build();
 
     // NOTE: Encoders
     private static final Encoder armEncoder = new Encoder(ARM_ENCODER_PIN_A, ARM_ENCODER_PIN_B, false,
@@ -182,9 +186,12 @@ public class RobotContainer {
     DigitalInput LSB = new DigitalInput(LIMIT_SWITCH_PORT_B);
 
     // NOTE: Drives / Actors
-    //public static final ArmWrapper MainArm = new ArmWrapper(armEncoder, carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
-    //public static final MDrive drive = new MDrive(frontLeft, backLeft, frontRight, backRight);
-    // public static final ArmController armController = new ArmController(MainArm, ArmState.RecalibrateWait);
+    // public static final ArmWrapper MainArm = new ArmWrapper(armEncoder,
+    // carriageEncoder, armMotor, carriageMotor, spinnerA, spinnerB);
+    // public static final MDrive drive = new MDrive(frontLeft, backLeft,
+    // frontRight, backRight);
+    // public static final ArmController armController = new ArmController(MainArm,
+    // ArmState.RecalibrateWait);
     public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
 
     // NOTE: Raspberry PI interface related variables
@@ -202,11 +209,11 @@ public class RobotContainer {
     // NOTE: CONSTANTS ALL GO HERE
     public void onStart() {
         initSolenoid(FORWARD_SOLENOID_PORT_A, REVERSE_SOLENOID_PORT_A,
-            FORWARD_SOLENOID_PORT_B, REVERSE_SOLENOID_PORT_B);
+                FORWARD_SOLENOID_PORT_B, REVERSE_SOLENOID_PORT_B);
     }
 
     public void teleop() {
-        
+
     }
 
     public void autonomousMode() {
@@ -214,13 +221,15 @@ public class RobotContainer {
     }
 
     public void onDisable() {
-
     }
 
     /**
-     * As of 2023, smartdashboard is the way to go for drivers to see on the field. I strongly suggest SmartDashboard over ShuffleBoard.
-     * Put all of the information you want to see, or your drivers to see on the screen. Put all the information you would want as a driver on the board.
+     * As of 2023, smartdashboard is the way to go for drivers to see on the field.
+     * I strongly suggest SmartDashboard over ShuffleBoard.
+     * Put all of the information you want to see, or your drivers to see on the
+     * screen. Put all the information you would want as a driver on the board.
      * Tell your drivers what the funky numbers mean.
+     * 
      * @see SmartDashboard
      */
     public void putDashboard() {
@@ -241,19 +250,24 @@ public class RobotContainer {
 
         SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
 
-        //NOTE: Methods from other objects to put their information on display. It's kinda dumb. Implement something smarter if you want, im not gonna do it.
+        // NOTE: Methods from other objects to put their information on display. It's
+        // kinda dumb. Implement something smarter if you want, im not gonna do it.
         // MainArm.putDashboard();
-        
+
         // armController.putDashboard();
     }
 
     /**
-     * Made for the 2023 season, not important. This initializess three solenoid objects, two double &  one single and sets whatever is needed to default state.
+     * Made for the 2023 season, not important. This initializess three solenoid
+     * objects, two double & one single and sets whatever is needed to default
+     * state.
+     * 
      * @see DoubleSolenoid
      * @see Solenoid
      */
     private void initSolenoid(int fc1, int rc1, int fc2, int rc2) {
-        armPistonSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, fc1, rc1); // NOTE: Forward channel, reverse
+        armPistonSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, fc1, rc1); // NOTE: Forward channel,
+                                                                                        // reverse
         handPistonSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, fc2, rc2);
         armPistonSolenoid.set(kReverse);
         brakePistonSolenoid = new Solenoid(PneumaticsModuleType.CTREPCM, 1);

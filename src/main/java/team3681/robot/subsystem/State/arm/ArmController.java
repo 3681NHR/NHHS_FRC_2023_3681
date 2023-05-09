@@ -95,7 +95,6 @@ public class ArmController {
 
         ArmController.states.put(ArmState.Home, new ArmAction() {
             private final double HOME_ANGLE = 0.0;
-
             @Override
             public ArmActionResult run(ArmWrapper MainArm) {
                 if (MainArm.PIDControlArm(HOME_ANGLE)) {
@@ -104,6 +103,7 @@ public class ArmController {
                 return ArmActionResult.noChange();
             }
         });
+
 
         ArmController.states.put(ArmState.Analog, new ArmAction() {
 

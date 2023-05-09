@@ -23,6 +23,8 @@ public interface UniversalMotor extends IMotorControllerEnhanced {
 
     double get();
 
+    void putDashboard();
+
     /**
      * Common interface for setting the speed of a motor controller.
      *

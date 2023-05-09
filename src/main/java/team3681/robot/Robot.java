@@ -183,16 +183,11 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
-        gyro.calibrate();
-        gyro.reset();
-        .setState(ArmState.AutoHigh);
     }
 
     @Override
     public void autonomousPeriodic() {
-        heading = 0;
-        gyroError = heading - gyro.getAngle();
-        drive.driveCartesian(0, 0, 0);
+
     }
 
     // ========(EVERYTHING BELOW IS NOT PART OF TIMED ROBOT FRC STUFF)================================================
@@ -215,8 +210,6 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putNumber("ROLLER MODE CHANGE PISTONS", armPistonSolenoid.getFwdChannel());
         MainArm.putDashboard();
-        
-        .putDashboard();
     }
 
     public void initSolenoid(int fc1, int rc1, int fc2, int rc2) {

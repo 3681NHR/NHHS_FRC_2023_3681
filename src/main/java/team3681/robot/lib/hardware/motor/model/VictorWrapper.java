@@ -12,6 +12,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.revrobotics.CANSparkMax.ControlType;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import team3681.robot.lib.hardware.motor.interfaces.UniversalMotor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,6 +65,13 @@ public class VictorWrapper extends VictorSPX implements UniversalMotor {
         }
     }
 
+    /**
+     * Does not have an integrated encoder. Information is limited.
+     */
+    @Override
+    public void putDashboard() {
+        SmartDashboard.putString("Name", name);
+    }
     
     @Override
     public void stopMotor(ControlMode mode){

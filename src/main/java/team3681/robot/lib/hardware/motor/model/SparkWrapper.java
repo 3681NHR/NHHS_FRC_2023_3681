@@ -23,6 +23,8 @@ import com.revrobotics.SparkMaxPIDController;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 
 /**
  *
@@ -104,6 +106,13 @@ public class SparkWrapper implements UniversalMotor {
         public SparkWrapper build() {
             return new SparkWrapper(this);
         }
+    }
+
+    @Override
+    public void putDashboard() {
+        SmartDashboard.putNumber(name + " | I-Encoder Position", getSelectedSensorPosition(getBaseID()));
+        SmartDashboard.putNumber(name + " | I-Encoder Rate", getSelectedSensorVelocity(getBaseID()));
+        SmartDashboard.putString("Name", name);
     }
 
     /**
