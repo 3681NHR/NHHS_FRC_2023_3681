@@ -19,7 +19,7 @@ import team3681.robot.subsystem.State.Events.Command.CommandLib.*;
  */
 public class TeleopManager implements BehaviorManager {
 
-    //NOTE: Static is used a lot here because I want, 
+    // NOTE: Static is used a lot here because I want,
     // if for some reason you create more than one instance of this,
     // the variables/objects to be shared across instances.
 
@@ -115,7 +115,7 @@ public class TeleopManager implements BehaviorManager {
     private static final double LOWER_MOD = 0.3;
     private static final double MAGIC_NUMBER_I_DONT_CARE = 0.4;
     private static final double DEFAULT_NUM = 0.7;
-    private static final double ZERO_POINT_FIVE = 0.5; //im done.
+    private static final double ZERO_POINT_FIVE = 0.5; // im done.
     private static final double INPUT_BUFFER_AMOUNT = 0.2;
 
     private static final int BOTH_TRUE = 3;
@@ -155,20 +155,20 @@ public class TeleopManager implements BehaviorManager {
                 - (cARTA * MAGIC_NUMBER_I_DONT_CARE)
                 + DEFAULT_NUM;
 
-        //NOTE: This is what drives the wheels. Remember that.
+        // NOTE: This is what drives the wheels. Remember that.
         driveCartesian(driveAdjust, strafe, forward, rotate);
 
         // Xbox controller buttons below probably
-        
+
         // Write code here...
 
         if (controllerA.getAButtonPressed()) {
-            //Example command send
+            // Example command send
             // Adds the command to the back of the queue
             aHandler.addCommand(new StopCommand());
         }
 
-        if(controllerB.getBButtonPressed()) {
+        if (controllerB.getBButtonPressed()) {
 
             // Adds the command to the front. Priority queue.
             aHandler.insertCommandToFront(new RealCommand2());
@@ -178,7 +178,7 @@ public class TeleopManager implements BehaviorManager {
         rightBumper = controllerB.getRightBumper() ? 1 : 0;
 
         switch (leftBumper * 2 + rightBumper) {
-            case BOTH_TRUE: //NOTE: While both true, cancel out all movement
+            case BOTH_TRUE: // NOTE: While both true, cancel out all movement
                 carriageSpeedL = STOPPED_SPEED;
                 carriageSpeedR = STOPPED_SPEED;
                 break;
