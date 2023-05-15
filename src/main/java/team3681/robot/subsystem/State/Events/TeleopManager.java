@@ -168,10 +168,18 @@ public class TeleopManager implements BehaviorManager {
             aHandler.addCommand(new StopCommand());
         }
 
-        if (controllerB.getBButtonPressed()) {
+        if (controllerA.getBButtonPressed()) {
 
             // Adds the command to the front. Priority queue.
             aHandler.insertCommandToFront(new RealCommand2());
+        }
+
+        if (controllerA.getXButtonPressed()) {
+
+        }
+
+        if (controllerA.getYButtonPressed()) {
+
         }
 
         leftBumper = controllerB.getLeftBumper() ? 1 : 0;

@@ -60,6 +60,10 @@ public class CommandHandler {
         this.queueThread.start();
     }
 
+    /**
+     * Inserts a command to the back of queue. Use for batch commands.
+     * @param command
+     */
     public void addCommand(CommandPointer command) {
         synchronized (commandQueue) {
             commandQueue.offer(command);
@@ -67,6 +71,9 @@ public class CommandHandler {
         }
     }
 
+    /**
+     * Clears the command queue.
+     */
     public void clearCommandQueue() {
         synchronized (commandQueue) {
             commandQueue.clear();
@@ -75,11 +82,22 @@ public class CommandHandler {
         }
     }
     
+    /**
+     * Insert a command to the front, use for commands that take priority.
+     * @param command
+     */
     public void insertCommandToFront(CommandPointer command) {
         synchronized (commandQueue) {
             commandQueue.addFirst(command);
             commandQueue.notify(); 
         }
+    }
+
+    /**
+     * Use for emergency stops.
+     */
+    public void stopRunning() {
+        isRunning = false;
     }
 
     @FunctionalInterface

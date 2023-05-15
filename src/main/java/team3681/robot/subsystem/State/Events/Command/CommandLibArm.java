@@ -15,7 +15,7 @@ import team3681.robot.lib.hardware.motor.model.SparkWrapper;
  * <p>
  * If you want to make more, look at the other commands and copy and paste. So shrimple.
  * <p>
- * Currently this uses information for the 2023 robot. Its going to be a pain in the arse
+ * Currently this uses information for the 2023 robot. Its going to be a pain in the arse to do anything.
  * @see CommandHandler
  * @see Stuff
  */

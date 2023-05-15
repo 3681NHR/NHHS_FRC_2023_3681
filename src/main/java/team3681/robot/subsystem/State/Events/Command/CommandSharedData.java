@@ -3,7 +3,7 @@ package team3681.robot.subsystem.State.Events.Command;
 import team3681.robot.lib.tools.AtomicDouble;
 
 /**
- * 
+ * Shared data and stuff
  */
 public class CommandSharedData {
     //NOTE: Put your variable stuff here.
